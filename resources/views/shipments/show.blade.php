@@ -1,0 +1,333 @@
+@extends('layouts.app')
+
+@section('title', 'Shipment ' . $shipment->shipment_number)
+@section('header-title', 'Consignment Details')
+@section('header-subtitle', 'Comprehensive tracking & cargo manifest for ' . $shipment->shipment_number)
+
+@section('content')
+<div class="space-y-6">
+
+    <!-- Top Action & Navigation Bar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <a href="{{ route('shipments.index') }}" class="inline-flex items-center space-x-2 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            <span>Back to Shipments Directory</span>
+        </a>
+
+        @if(auth()->user()->isAdmin() || auth()->user()->isOperator())
+            <div class="flex items-center space-x-2">
+                @if($shipment->current_status !== 'DELIVERED')
+                    <a href="{{ route('shipments.edit', $shipment) }}" class="inline-flex items-center space-x-1.5 px-3.5 py-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-semibold shadow-sm transition-colors">
+                        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        <span>Edit Consignment</span>
+                    </a>
+                @endif
+
+                @if($shipment->current_status === 'CREATED')
+                    <form action="{{ route('shipments.destroy', $shipment) }}" method="POST" onsubmit="return confirm('Are you sure you want to permanently delete this consignment?');">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="inline-flex items-center space-x-1.5 px-3.5 py-2 border border-rose-200 bg-white hover:bg-rose-50 text-rose-600 rounded-xl text-xs font-semibold shadow-sm transition-colors">
+                            <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            <span>Delete</span>
+                        </button>
+                    </form>
+                @endif
+            </div>
+        @endif
+    </div>
+
+    <!-- Header Hero Card -->
+    <div class="bg-gradient-to-r from-navy-900 via-navy-800 to-slate-900 rounded-2xl p-6 text-white shadow-lg border border-slate-800 relative overflow-hidden">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+                <div class="flex items-center space-x-2.5 mb-2">
+                    <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-ocean-500/20 text-ocean-400 border border-ocean-500/30">
+                        {{ $shipment->shipment_number }}
+                    </span>
+                    <span class="text-xs text-slate-400">&bull;</span>
+                    <span class="text-xs text-slate-300 font-semibold">{{ $shipment->carrier->name }} ({{ $shipment->carrier->type }})</span>
+                </div>
+
+                <h1 class="text-2xl font-extrabold tracking-tight text-white flex items-center space-x-3">
+                    <span>{{ $shipment->originLocation->name }}</span>
+                    <span class="text-ocean-400">&rarr;</span>
+                    <span>{{ $shipment->destinationLocation->name }}</span>
+                </h1>
+
+                <p class="text-xs text-slate-300 mt-2 max-w-2xl">
+                    <strong class="text-slate-100">Commodity:</strong> {{ $shipment->cargo_type }} &bull;
+                    <strong class="text-slate-100">Shipper:</strong> {{ $shipment->customer->name }} ({{ $shipment->customer->company_name ?? 'Individual' }})
+                </p>
+            </div>
+
+            <!-- Badges Section -->
+            <div class="flex flex-col sm:flex-row md:flex-col items-start md:items-end gap-2.5">
+                <!-- Status Badge -->
+                @if($shipment->current_status === 'DELIVERED')
+                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        STATUS: DELIVERED
+                    </span>
+                @elseif($shipment->current_status === 'IN_TRANSIT')
+                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30 flex items-center space-x-1.5">
+                        <span class="w-2 h-2 rounded-full bg-sky-400 animate-pulse"></span>
+                        <span>STATUS: IN TRANSIT</span>
+                    </span>
+                @elseif($shipment->current_status === 'PICKED_UP')
+                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                        STATUS: PICKED UP
+                    </span>
+                @elseif($shipment->current_status === 'BOOKED')
+                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                        STATUS: BOOKED
+                    </span>
+                @else
+                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-slate-500/20 text-slate-300 border border-slate-500/30">
+                        STATUS: CREATED
+                    </span>
+                @endif
+
+                <!-- Delay Indicator -->
+                @if($shipment->is_delayed)
+                    <div class="px-3 py-1 rounded-lg text-xs font-bold {{ $shipment->delay_severity === 'HIGH' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40' : 'bg-amber-500/20 text-amber-300 border border-amber-500/40' }}">
+                        Delayed +{{ $shipment->delay_hours }}h ({{ $shipment->delay_severity }} Severity)
+                    </div>
+                @else
+                    <div class="px-3 py-1 rounded-lg text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center space-x-1.5">
+                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                        <span>Operating on Schedule</span>
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+
+    <!-- Metrics Stat Tiles (4 Grid) -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Gross Weight</div>
+            <div class="text-lg font-bold text-slate-900 mt-1">
+                {{ number_format($shipment->total_weight, 2) }} <span class="text-xs font-normal text-slate-500">kg</span>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Cargo Volume</div>
+            <div class="text-lg font-bold text-slate-900 mt-1">
+                {{ number_format($shipment->total_volume, 2) }} <span class="text-xs font-normal text-slate-500">cbm</span>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Manifest Line Items</div>
+            <div class="text-lg font-bold text-slate-900 mt-1">
+                {{ $shipment->items->count() }} <span class="text-xs font-normal text-slate-500">skus</span>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Delay Tolerance</div>
+            <div class="text-lg font-bold {{ $shipment->is_delayed ? 'text-rose-600' : 'text-emerald-600' }} mt-1">
+                {{ $shipment->delay_hours }}h <span class="text-xs font-normal text-slate-500">(Max 12h threshold)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Card -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <h3 class="text-sm font-bold text-slate-900 mb-4 flex items-center space-x-2">
+            <svg class="w-4 h-4 text-ocean-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            <span>Voyage Schedule & Milestones</span>
+        </h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
+            <div class="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                <div class="text-slate-400 font-semibold uppercase tracking-wider text-[11px]">Expected Departure (ETD)</div>
+                <div class="text-sm font-bold text-slate-900 mt-1">{{ $shipment->expected_departure->format('l, d F Y - H:i') }} UTC</div>
+                <div class="text-[11px] text-slate-500 mt-0.5">{{ $shipment->originLocation->name }}</div>
+            </div>
+
+            <div class="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                <div class="text-slate-400 font-semibold uppercase tracking-wider text-[11px]">Expected Arrival (ETA)</div>
+                <div class="text-sm font-bold text-slate-900 mt-1">{{ $shipment->expected_arrival->format('l, d F Y - H:i') }} UTC</div>
+                <div class="text-[11px] text-slate-500 mt-0.5">{{ $shipment->destinationLocation->name }}</div>
+            </div>
+
+            <div class="p-4 rounded-xl {{ $shipment->is_delayed ? 'bg-amber-50/60 border border-amber-200/60' : 'bg-slate-50 border border-slate-100' }}">
+                <div class="text-slate-400 font-semibold uppercase tracking-wider text-[11px]">Estimated / Actual Arrival</div>
+                <div class="text-sm font-bold {{ $shipment->is_delayed ? 'text-amber-800' : 'text-slate-900' }} mt-1">
+                    {{ $shipment->estimated_arrival ? $shipment->estimated_arrival->format('l, d F Y - H:i') . ' UTC' : 'Pending Update' }}
+                </div>
+                @if($shipment->is_delayed)
+                    <div class="text-[11px] text-amber-700 font-semibold mt-0.5">
+                        Variance: +{{ $shipment->delay_hours }} hours late
+                    </div>
+                @else
+                    <div class="text-[11px] text-emerald-600 font-semibold mt-0.5">Estimated on time</div>
+                @endif
+            </div>
+        </div>
+
+        @if($shipment->delay_reason)
+            <div class="mt-4 p-3.5 rounded-xl bg-amber-50 border border-amber-200/80 text-xs text-amber-900">
+                <span class="font-bold">Recorded Delay Reason:</span> {{ $shipment->delay_reason }}
+            </div>
+        @endif
+    </div>
+
+    <!-- Cargo Manifest Items Table -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div>
+                <h3 class="text-sm font-bold text-slate-900">Cargo Manifest Items</h3>
+                <p class="text-xs text-slate-500">Declared packages, units, and volumetric properties</p>
+            </div>
+            <span class="text-xs text-slate-400 font-mono">{{ $shipment->items->count() }} line items</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-500 uppercase font-semibold text-[11px] border-b border-slate-200">
+                    <tr>
+                        <th class="px-6 py-3">#</th>
+                        <th class="px-6 py-3">Item Description</th>
+                        <th class="px-6 py-3">SKU / Code</th>
+                        <th class="px-6 py-3 text-right">Quantity</th>
+                        <th class="px-6 py-3 text-right">Weight (kg)</th>
+                        <th class="px-6 py-3 text-right">Volume (cbm)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-slate-700">
+                    @forelse($shipment->items as $idx => $item)
+                        <tr class="hover:bg-slate-50/70">
+                            <td class="px-6 py-3.5 text-slate-400 font-mono">{{ $idx + 1 }}</td>
+                            <td class="px-6 py-3.5 font-bold text-slate-900">{{ $item->item_name }}</td>
+                            <td class="px-6 py-3.5 font-mono text-ocean-600">{{ $item->sku ?? '-' }}</td>
+                            <td class="px-6 py-3.5 text-right font-semibold">{{ number_format($item->quantity) }}</td>
+                            <td class="px-6 py-3.5 text-right font-mono">{{ number_format($item->weight, 2) }}</td>
+                            <td class="px-6 py-3.5 text-right font-mono">{{ number_format($item->volume, 2) }}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="px-6 py-6 text-center text-slate-400">No items listed.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+                <tfoot class="bg-slate-50/80 font-bold text-slate-900 text-xs border-t border-slate-200">
+                    <tr>
+                        <td colspan="3" class="px-6 py-3 text-right uppercase tracking-wider text-[11px] text-slate-500">Totals:</td>
+                        <td class="px-6 py-3 text-right">{{ number_format($shipment->items->sum('quantity')) }} pcs</td>
+                        <td class="px-6 py-3 text-right font-mono">{{ number_format($shipment->total_weight, 2) }} kg</td>
+                        <td class="px-6 py-3 text-right font-mono">{{ number_format($shipment->total_volume, 2) }} cbm</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <!-- Section Placeholders for Subsequent Modules (Tracking, Map, Exceptions) -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Tracking Timeline Section (Seeded events displayed + ready for Phase 9) -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
+                    <svg class="w-4 h-4 text-ocean-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>Chronological Tracking Events</span>
+                </h3>
+                <span class="text-[11px] text-slate-400 font-mono">{{ $shipment->trackingEvents->count() }} Milestones</span>
+            </div>
+
+            @if($shipment->trackingEvents->count() > 0)
+                <div class="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+                    @foreach($shipment->trackingEvents->sortBy('event_time') as $event)
+                        <div class="relative">
+                            <span class="absolute -left-6 top-1 w-3 h-3 rounded-full bg-ocean-500 ring-4 ring-white"></span>
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-slate-900">{{ $event->status }} &bull; {{ $event->location_name }}</span>
+                                <span class="text-[11px] text-slate-400 font-mono">{{ $event->event_time->format('d M Y - H:i') }}</span>
+                            </div>
+                            <p class="text-xs text-slate-600 mt-1">{{ $event->description }}</p>
+                            @if($event->recorder)
+                                <div class="text-[10px] text-slate-400 mt-0.5">Recorded by: {{ $event->recorder->name }}</div>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <div class="p-6 text-center text-xs text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                    No tracking events recorded yet. Ready for tracking module integration.
+                </div>
+            @endif
+        </div>
+
+        <!-- Exceptions & Incidents Section (Ready for Phase 9) -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
+                    <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <span>Exceptions & Risk Incidents</span>
+                </h3>
+                <span class="text-[11px] text-slate-400 font-mono">{{ $shipment->exceptions->count() }} Reported</span>
+            </div>
+
+            @if($shipment->exceptions->count() > 0)
+                <div class="space-y-3">
+                    @foreach($shipment->exceptions as $exc)
+                        <div class="p-4 rounded-xl border {{ $exc->status === 'OPEN' ? 'bg-rose-50/60 border-rose-200' : ($exc->status === 'INVESTIGATING' ? 'bg-amber-50/60 border-amber-200' : 'bg-slate-50 border-slate-200') }} text-xs">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="font-bold text-slate-900 flex items-center space-x-2">
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase {{ $exc->severity === 'HIGH' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800' }}">
+                                        {{ $exc->severity }}
+                                    </span>
+                                    <span>{{ $exc->exception_type }}</span>
+                                </span>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase {{ $exc->status === 'RESOLVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700' }}">
+                                    {{ $exc->status }}
+                                </span>
+                            </div>
+                            <p class="text-slate-700 mt-1">{{ $exc->description }}</p>
+                            <div class="text-[10px] text-slate-400 mt-2 flex items-center justify-between">
+                                <span>Detected: {{ $exc->detected_at->format('d M Y H:i') }}</span>
+                                @if($exc->resolved_at)
+                                    <span class="text-emerald-700 font-medium">Resolved: {{ $exc->resolved_at->format('d M Y H:i') }}</span>
+                                @endif
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <div class="p-6 text-center text-xs text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                    <svg class="w-8 h-8 text-emerald-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>No exceptions or customs holds detected on this shipment.</span>
+                </div>
+            @endif
+        </div>
+
+    </div>
+
+    <!-- Maritime Route Overview Card -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <h3 class="text-sm font-bold text-slate-900 mb-2 flex items-center space-x-2">
+            <svg class="w-4 h-4 text-ocean-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+            <span>Maritime Navigation Corridor Reference</span>
+        </h3>
+        <p class="text-xs text-slate-500 mb-4">Corridor: {{ config('cargotrace.primary_corridor') }} &bull; Standard Transit Coordinates</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
+            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                <div class="text-[10px] text-slate-400 uppercase font-sans font-bold">Departure Terminal</div>
+                <div class="text-slate-900 font-bold mt-0.5">{{ $shipment->originLocation->name }} ({{ $shipment->originLocation->code }})</div>
+                <div class="text-slate-500 text-[11px] mt-1">GPS: {{ $shipment->originLocation->latitude }}, {{ $shipment->originLocation->longitude }}</div>
+            </div>
+
+            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                <div class="text-[10px] text-slate-400 uppercase font-sans font-bold">Arrival Terminal</div>
+                <div class="text-slate-900 font-bold mt-0.5">{{ $shipment->destinationLocation->name }} ({{ $shipment->destinationLocation->code }})</div>
+                <div class="text-slate-500 text-[11px] mt-1">GPS: {{ $shipment->destinationLocation->latitude }}, {{ $shipment->destinationLocation->longitude }}</div>
+            </div>
+        </div>
+    </div>
+
+</div>
+@endsection

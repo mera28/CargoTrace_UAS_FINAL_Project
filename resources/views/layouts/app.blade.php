@@ -78,7 +78,7 @@
                 </a>
 
                 <!-- Shipments (All Roles) -->
-                <a href="#" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800/70 hover:text-white transition-colors">
+                <a href="{{ route('shipments.index') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('shipments.*') ? 'bg-ocean-600 text-white font-semibold shadow-sm' : 'text-slate-300 hover:bg-slate-800/70 hover:text-white' }} transition-colors">
                     <svg class="w-5 h-5 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                     </svg>
