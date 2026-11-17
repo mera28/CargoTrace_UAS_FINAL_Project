@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CarrierController;
+use App\Http\Controllers\LocationController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -25,4 +27,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
+
+    // Admin Only Master Data Routes
+    Route::middleware('role:admin')->group(function () {
+        Route::resource('carriers', CarrierController::class)->except(['create', 'show', 'edit']);
+        Route::resource('locations', LocationController::class)->except(['create', 'show', 'edit']);
+    });
 });
