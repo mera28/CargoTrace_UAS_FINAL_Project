@@ -140,17 +140,17 @@
             @csrf
             <div>
                 <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Terminal / Port Name *</label>
-                <input type="text" name="name" required placeholder="e.g. Port of Felixstowe" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-ocean-500 focus:outline-none">
+                <input type="text" id="add_name" name="name" required placeholder="e.g. Port of Felixstowe" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-ocean-500 focus:outline-none">
             </div>
 
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Port Code (UN/LOCODE) *</label>
-                    <input type="text" name="code" required maxlength="10" placeholder="e.g. GBFXT" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono uppercase focus:ring-2 focus:ring-ocean-500 focus:outline-none">
+                    <input type="text" id="add_code" name="code" required maxlength="10" placeholder="e.g. GBFXT" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono uppercase focus:ring-2 focus:ring-ocean-500 focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Region *</label>
-                    <select name="region" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-ocean-500 focus:outline-none">
+                    <select id="add_region" name="region" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-ocean-500 focus:outline-none">
                         <option value="Southeast Asia">Southeast Asia</option>
                         <option value="Europe">Europe</option>
                         <option value="East Asia">East Asia</option>
@@ -162,23 +162,37 @@
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">City *</label>
-                    <input type="text" name="city" required placeholder="e.g. Felixstowe" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-ocean-500 focus:outline-none">
+                    <input type="text" id="add_city" name="city" required placeholder="e.g. Felixstowe" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-ocean-500 focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Country *</label>
-                    <input type="text" name="country" required placeholder="e.g. United Kingdom" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-ocean-500 focus:outline-none">
+                    <input type="text" id="add_country" name="country" required placeholder="e.g. United Kingdom" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-ocean-500 focus:outline-none">
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Latitude (-90 to 90) *</label>
-                    <input type="number" step="0.0000001" name="latitude" required placeholder="e.g. 51.9567" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-ocean-500 focus:outline-none">
+            <!-- Auto-Fill Coordinates Section -->
+            <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-800">Geographic Coordinates</span>
+                    <button type="button" id="add_btn_geocode" onclick="fetchCoordinates('add')"
+                        class="inline-flex items-center space-x-1.5 px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-ocean-50 hover:bg-ocean-100 text-ocean-700 border border-ocean-200 transition-colors shadow-2xs">
+                        <svg class="w-3.5 h-3.5 text-ocean-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <span>⚡ Auto-Fill Coordinates</span>
+                    </button>
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Longitude (-180 to 180) *</label>
-                    <input type="number" step="0.0000001" name="longitude" required placeholder="e.g. 1.3069" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-ocean-500 focus:outline-none">
+                <div id="add_geocode_feedback" class="text-[11px] hidden font-medium"></div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">Latitude (-90 to 90) *</label>
+                        <input type="number" step="0.0000001" id="add_latitude" name="latitude" required placeholder="e.g. 51.9567" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-ocean-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">Longitude (-180 to 180) *</label>
+                        <input type="number" step="0.0000001" id="add_longitude" name="longitude" required placeholder="e.g. 1.3069" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-ocean-500 focus:outline-none">
+                    </div>
                 </div>
+                <p class="text-[10px] text-slate-400">Queries OpenStreetMap Nominatim. Coordinates remain manually editable if needed.</p>
             </div>
 
             <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
@@ -238,15 +252,29 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Latitude *</label>
-                    <input type="number" step="0.0000001" id="edit_latitude" name="latitude" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-ocean-500 focus:outline-none">
+            <!-- Auto-Fill Coordinates Section (Edit) -->
+            <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-800">Geographic Coordinates</span>
+                    <button type="button" id="edit_btn_geocode" onclick="fetchCoordinates('edit')"
+                        class="inline-flex items-center space-x-1.5 px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-ocean-50 hover:bg-ocean-100 text-ocean-700 border border-ocean-200 transition-colors shadow-2xs">
+                        <svg class="w-3.5 h-3.5 text-ocean-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <span>⚡ Auto-Fill Coordinates</span>
+                    </button>
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Longitude *</label>
-                    <input type="number" step="0.0000001" id="edit_longitude" name="longitude" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-ocean-500 focus:outline-none">
+                <div id="edit_geocode_feedback" class="text-[11px] hidden font-medium"></div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">Latitude *</label>
+                        <input type="number" step="0.0000001" id="edit_latitude" name="latitude" required class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-ocean-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">Longitude *</label>
+                        <input type="number" step="0.0000001" id="edit_longitude" name="longitude" required class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-ocean-500 focus:outline-none">
+                    </div>
                 </div>
+                <p class="text-[10px] text-slate-400">Queries OpenStreetMap Nominatim. Coordinates remain manually editable if needed.</p>
             </div>
 
             <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
@@ -259,12 +287,14 @@
 
 <script>
     function openAddModal() {
+        document.getElementById('add_geocode_feedback').className = 'hidden';
         document.getElementById('addLocationModal').classList.remove('hidden');
     }
     function closeAddModal() {
         document.getElementById('addLocationModal').classList.add('hidden');
     }
     function openEditModal(loc) {
+        document.getElementById('edit_geocode_feedback').className = 'hidden';
         document.getElementById('editLocationForm').action = '/locations/' + loc.id;
         document.getElementById('edit_name').value = loc.name;
         document.getElementById('edit_code').value = loc.code;
@@ -277,6 +307,56 @@
     }
     function closeEditModal() {
         document.getElementById('editLocationModal').classList.add('hidden');
+    }
+
+    async function fetchCoordinates(mode) {
+        const nameEl = document.getElementById(mode + '_name');
+        const cityEl = document.getElementById(mode + '_city');
+        const countryEl = document.getElementById(mode + '_country');
+        const latEl = document.getElementById(mode + '_latitude');
+        const lonEl = document.getElementById(mode + '_longitude');
+        const btnEl = document.getElementById(mode + '_btn_geocode');
+        const fbEl = document.getElementById(mode + '_geocode_feedback');
+
+        const name = nameEl ? nameEl.value.trim() : '';
+        const city = cityEl ? cityEl.value.trim() : '';
+        const country = countryEl ? countryEl.value.trim() : '';
+
+        const query = [name, city, country].filter(Boolean).join(', ') || city || name;
+
+        if (!query) {
+            fbEl.className = 'text-[11px] text-amber-600 font-medium block';
+            fbEl.textContent = 'Please enter Terminal Name, City, or Country first to auto-fill.';
+            return;
+        }
+
+        const originalBtnHtml = btnEl.innerHTML;
+        btnEl.disabled = true;
+        btnEl.innerHTML = '<svg class="w-3.5 h-3.5 animate-spin mr-1 inline text-ocean-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> <span>Locating...</span>';
+
+        fbEl.className = 'text-[11px] text-slate-500 font-medium block';
+        fbEl.textContent = 'Querying OpenStreetMap Nominatim for: "' + query + '"...';
+
+        try {
+            const response = await fetch('/locations/geocode?query=' + encodeURIComponent(query));
+            const result = await response.json();
+
+            if (response.ok && result.success && result.data) {
+                latEl.value = parseFloat(result.data.latitude).toFixed(7);
+                lonEl.value = parseFloat(result.data.longitude).toFixed(7);
+                fbEl.className = 'text-[11px] text-emerald-600 font-semibold block';
+                fbEl.textContent = '✓ Found: ' + result.data.display_name.substring(0, 80) + '...';
+            } else {
+                fbEl.className = 'text-[11px] text-rose-600 font-medium block';
+                fbEl.textContent = result.message || 'Coordinates not found. Please input manually.';
+            }
+        } catch (err) {
+            fbEl.className = 'text-[11px] text-rose-600 font-medium block';
+            fbEl.textContent = 'Geocoding service unavailable. Please input coordinates manually.';
+        } finally {
+            btnEl.disabled = false;
+            btnEl.innerHTML = originalBtnHtml;
+        }
     }
 </script>
 @endsection

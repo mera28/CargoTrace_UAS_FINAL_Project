@@ -40,6 +40,7 @@
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
     </style>
+    @stack('styles')
 </head>
 <body class="h-full flex antialiased bg-slate-50 text-slate-800">
 
@@ -240,5 +241,6 @@
         </main>
     </div>
 
+    @stack('scripts')
 </body>
 </html>

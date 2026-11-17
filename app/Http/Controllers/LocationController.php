@@ -4,12 +4,43 @@ namespace App\Http\Controllers;
 
 use App\Models\Location;
 use App\Services\AuditLogService;
+use App\Services\ExternalLogisticsService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class LocationController extends Controller
 {
+    /**
+     * Geocode location query via ExternalLogisticsService.
+     */
+    public function geocode(Request $request, ExternalLogisticsService $service): JsonResponse
+    {
+        $query = $request->query('query') ?? $request->query('q') ?? '';
+
+        if (!is_string($query) || trim($query) === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Location query parameter is required.',
+            ], 422);
+        }
+
+        $result = $service->geocodeLocation($query);
+
+        if (!$result) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No coordinates found for the specified location.',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $result,
+        ]);
+    }
+
     /**
      * Display a listing of the locations.
      */

@@ -6,7 +6,74 @@
     $allowedNextStatuses = $trackingService->getAllowedNextStatuses($shipment->current_status);
     $thresholdHours = config('cargotrace.delay_threshold_hours', 12);
     $exceptionTypes = config('cargotrace.exception_types', ['CUSTOMS_HOLD', 'WEATHER_DELAY', 'PORT_CONGESTION', 'DAMAGED', 'MISROUTED', 'DOCUMENTATION_ISSUE']);
+
+    // Map Route Points for Leaflet.js
+    $originPoint = [
+        'lat' => (float) $shipment->originLocation->latitude,
+        'lng' => (float) $shipment->originLocation->longitude,
+        'title' => 'Origin: ' . $shipment->originLocation->name . ' (' . $shipment->originLocation->code . ')',
+        'status' => 'DEPARTURE TERMINAL',
+        'time' => $shipment->expected_departure->format('d M Y - H:i') . ' UTC',
+        'type' => 'origin',
+        'description' => 'Port of departure in ' . $shipment->originLocation->country,
+    ];
+
+    $destPoint = [
+        'lat' => (float) $shipment->destinationLocation->latitude,
+        'lng' => (float) $shipment->destinationLocation->longitude,
+        'title' => 'Destination: ' . $shipment->destinationLocation->name . ' (' . $shipment->destinationLocation->code . ')',
+        'status' => 'DESTINATION TERMINAL',
+        'time' => 'Contracted ETA: ' . $shipment->expected_arrival->format('d M Y - H:i') . ' UTC',
+        'type' => 'destination',
+        'description' => 'Final port of discharge in ' . $shipment->destinationLocation->country,
+    ];
+
+    $eventPoints = [];
+    foreach ($shipment->trackingEvents->sortBy('event_time') as $ev) {
+        if (!is_null($ev->latitude) && !is_null($ev->longitude)) {
+            $eventPoints[] = [
+                'lat' => (float) $ev->latitude,
+                'lng' => (float) $ev->longitude,
+                'title' => $ev->location_name,
+                'status' => $ev->status,
+                'time' => $ev->event_time->format('d M Y - H:i') . ' UTC',
+                'type' => 'event',
+                'description' => $ev->description,
+            ];
+        }
+    }
+
+    $allRoutePoints = array_merge([$originPoint], $eventPoints, [$destPoint]);
+
+    // Determine which point is the latest active position
+    if ($shipment->current_status === 'DELIVERED') {
+        $activePointIndex = count($allRoutePoints) - 1;
+    } elseif (count($eventPoints) > 0) {
+        $activePointIndex = count($eventPoints);
+    } else {
+        $activePointIndex = 0;
+    }
 @endphp
+
+@push('styles')
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<style>
+    .leaflet-popup-content-wrapper {
+        border-radius: 0.75rem;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e2e8f0;
+        padding: 0;
+    }
+    .leaflet-popup-content {
+        margin: 10px 14px;
+        line-height: 1.4;
+    }
+    .custom-map-marker {
+        background: transparent;
+        border: none;
+    }
+</style>
+@endpush
 
 @section('title', 'Shipment ' . $shipment->shipment_number)
 @section('header-title', 'Consignment Details')
@@ -521,25 +588,109 @@
         </div>
     </div>
 
-    <!-- Maritime Route Overview Card -->
-    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <h3 class="text-sm font-bold text-slate-900 mb-2 flex items-center space-x-2">
-            <svg class="w-4 h-4 text-ocean-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
-            <span>Maritime Navigation Corridor Reference</span>
-        </h3>
-        <p class="text-xs text-slate-500 mb-4">Corridor: {{ config('cargotrace.primary_corridor') }} &bull; Standard Transit Coordinates</p>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
-            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                <div class="text-[10px] text-slate-400 uppercase font-sans font-bold">Departure Terminal</div>
-                <div class="text-slate-900 font-bold mt-0.5">{{ $shipment->originLocation->name }} ({{ $shipment->originLocation->code }})</div>
-                <div class="text-slate-500 text-[11px] mt-1">GPS: {{ $shipment->originLocation->latitude }}, {{ $shipment->originLocation->longitude }}</div>
+    <!-- INTERACTIVE VOYAGE ROUTE MAP & OPERATIONAL WEATHER CONTEXT -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-3">
+            <div>
+                <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
+                    <svg class="w-4 h-4 text-ocean-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+                    <span>Interactive Voyage Route & Milestone Mapping</span>
+                </h3>
+                <p class="text-xs text-slate-500">
+                    Live geospatial tracking with OpenStreetMap & Leaflet.js &bull; Corridor: <strong class="text-slate-700">{{ config('cargotrace.primary_corridor') }}</strong>
+                </p>
+            </div>
+            
+            <div class="flex items-center space-x-2 text-xs font-mono">
+                <span class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span>DEP: {{ $shipment->originLocation->code }}</span>
+                </span>
+                <span class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 font-semibold">
+                    <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                    <span>ARR: {{ $shipment->destinationLocation->code }}</span>
+                </span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Map Container (2 Cols on lg) -->
+            <div class="lg:col-span-2 space-y-2">
+                <div id="routeMap" class="w-full h-[410px] rounded-xl border border-slate-200 shadow-inner z-0 overflow-hidden"></div>
+                <div class="flex items-center justify-between text-[11px] text-slate-400">
+                    <span>Attribution: &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" class="underline hover:text-slate-600">OpenStreetMap contributors</a></span>
+                    <span class="font-sans">Click on map markers to view milestone details</span>
+                </div>
             </div>
 
-            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                <div class="text-[10px] text-slate-400 uppercase font-sans font-bold">Arrival Terminal</div>
-                <div class="text-slate-900 font-bold mt-0.5">{{ $shipment->destinationLocation->name }} ({{ $shipment->destinationLocation->code }})</div>
-                <div class="text-slate-500 text-[11px] mt-1">GPS: {{ $shipment->destinationLocation->latitude }}, {{ $shipment->destinationLocation->longitude }}</div>
+            <!-- Weather & Corridor Insights (1 Col on lg) -->
+            <div class="space-y-4 flex flex-col justify-between">
+                <!-- Weather Context Card -->
+                <div class="p-4 rounded-xl bg-gradient-to-br from-slate-50 to-sky-50/60 border border-slate-200 shadow-2xs space-y-3">
+                    <div class="flex items-center justify-between border-b border-slate-200/60 pb-2">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-7 h-7 rounded-lg bg-sky-100 text-sky-600 flex items-center justify-center">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z"/></svg>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-slate-900">Weather Context</h4>
+                                <span class="text-[10px] text-slate-500 font-mono">{{ $weather['context_type'] ?? 'Checkpoint' }}</span>
+                            </div>
+                        </div>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold {{ ($weather['success'] ?? false) ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600' }}">
+                            {{ ($weather['success'] ?? false) ? 'LIVE API' : 'OFFLINE' }}
+                        </span>
+                    </div>
+
+                    <div>
+                        <div class="text-xs font-bold text-slate-800">{{ $weather['location_name'] ?? 'Target Location' }}</div>
+                        <div class="text-[10px] text-slate-400 font-mono">
+                            GPS: {{ number_format($weather['latitude'] ?? 0, 4) }}&deg;, {{ number_format($weather['longitude'] ?? 0, 4) }}&deg;
+                        </div>
+                    </div>
+
+                    @if($weather['success'] ?? false)
+                        <div class="grid grid-cols-2 gap-2 pt-1 text-xs">
+                            <div class="p-2.5 rounded-lg bg-white border border-slate-200/80 shadow-2xs">
+                                <div class="text-[10px] text-slate-400 uppercase font-semibold">Conditions</div>
+                                <div class="font-bold text-slate-800 mt-0.5">{{ $weather['summary'] }}</div>
+                            </div>
+                            <div class="p-2.5 rounded-lg bg-white border border-slate-200/80 shadow-2xs">
+                                <div class="text-[10px] text-slate-400 uppercase font-semibold">Temperature</div>
+                                <div class="font-bold text-ocean-700 mt-0.5 text-sm">{{ $weather['temperature'] }} &deg;C</div>
+                            </div>
+                            <div class="col-span-2 p-2.5 rounded-lg bg-white border border-slate-200/80 shadow-2xs flex items-center justify-between">
+                                <span class="text-[10px] text-slate-400 uppercase font-semibold">Wind Velocity</span>
+                                <span class="font-bold text-slate-700 font-mono">{{ $weather['windspeed'] }} km/h</span>
+                            </div>
+                        </div>
+                    @else
+                        <div class="p-3 rounded-lg bg-amber-50 border border-amber-200/80 text-[11px] text-amber-800">
+                            {{ $weather['summary'] ?? 'Weather data temporarily unavailable' }}
+                        </div>
+                    @endif
+
+                    <div class="p-2.5 rounded-lg bg-white/80 border border-slate-200 text-[10px] text-slate-500 leading-relaxed italic">
+                        &bull; Operational weather context only; delay status is determined strictly by deterministic ETA rules.
+                    </div>
+                </div>
+
+                <!-- Navigation Corridor Coordinates Reference -->
+                <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-xs font-mono">
+                    <div class="text-[10px] font-sans font-bold text-slate-500 uppercase tracking-wider">Corridor Milestones</div>
+                    <div class="flex items-center justify-between text-slate-700 border-b border-slate-200/60 pb-1.5">
+                        <span class="font-sans font-semibold text-[11px]">Departure:</span>
+                        <span class="font-bold text-slate-900">{{ $shipment->originLocation->name }} ({{ $shipment->originLocation->code }})</span>
+                    </div>
+                    <div class="flex items-center justify-between text-slate-700 border-b border-slate-200/60 pb-1.5">
+                        <span class="font-sans font-semibold text-[11px]">Milestones:</span>
+                        <span class="font-bold text-ocean-600">{{ count($eventPoints) }} GPS logged</span>
+                    </div>
+                    <div class="flex items-center justify-between text-slate-700">
+                        <span class="font-sans font-semibold text-[11px]">Arrival Port:</span>
+                        <span class="font-bold text-slate-900">{{ $shipment->destinationLocation->name }} ({{ $shipment->destinationLocation->code }})</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -675,4 +826,106 @@
     }
 </script>
 @endif
+
+@push('scripts')
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const points = @json($allRoutePoints);
+        const activeIdx = {{ $activePointIndex }};
+
+        if (!points || points.length === 0) return;
+
+        // Initialize Map
+        const map = L.map('routeMap', {
+            scrollWheelZoom: false
+        });
+
+        // Add Official OpenStreetMap Tile Layer
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Marker Styling Helper
+        function createMarkerIcon(type, isActive) {
+            let bgColor = '#0284c7';
+            let label = '●';
+            if (type === 'origin') {
+                bgColor = '#059669';
+                label = 'DEP';
+            } else if (type === 'destination') {
+                bgColor = '#e11d48';
+                label = 'ARR';
+            } else if (isActive) {
+                bgColor = '#0284c7';
+                label = 'NOW';
+            }
+
+            const pulseRing = isActive ? '<span class="absolute -inset-1 rounded-full bg-sky-400 opacity-75 animate-ping"></span>' : '';
+            const html = `
+                <div class="relative flex items-center justify-center w-7 h-7">
+                    ${pulseRing}
+                    <div style="background-color: ${bgColor}" class="relative w-7 h-7 rounded-full text-white font-extrabold text-[9px] flex items-center justify-center shadow-md border-2 border-white">
+                        ${label}
+                    </div>
+                </div>
+            `;
+
+            return L.divIcon({
+                className: 'custom-map-marker',
+                html: html,
+                iconSize: [28, 28],
+                iconAnchor: [14, 14],
+                popupAnchor: [0, -14]
+            });
+        }
+
+        // Popup Content Helper
+        function formatPopup(point) {
+            return `
+                <div class="p-1 text-slate-800 text-xs font-sans min-w-[190px]">
+                    <div class="font-bold text-slate-900 border-b border-slate-200 pb-1 mb-1.5">${point.title}</div>
+                    <div class="space-y-1">
+                        <div><span class="text-[10px] text-slate-400 uppercase font-semibold">Status:</span> <span class="font-bold px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-800">${point.status}</span></div>
+                        <div><span class="text-[10px] text-slate-400 uppercase font-semibold">Time:</span> <span class="font-mono text-[11px]">${point.time}</span></div>
+                        ${point.description ? `<div class="text-[11px] text-slate-600 mt-1 italic border-t border-slate-100 pt-1">${point.description}</div>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Route Polyline
+        const latLngs = points.map(p => [p.lat, p.lng]);
+        const polyline = L.polyline(latLngs, {
+            color: '#0284c7',
+            weight: 3.5,
+            opacity: 0.85,
+            dashArray: '8, 8'
+        }).addTo(map);
+
+        // Add Markers
+        points.forEach((p, idx) => {
+            const isActive = (idx === activeIdx);
+            const marker = L.marker([p.lat, p.lng], {
+                icon: createMarkerIcon(p.type, isActive)
+            }).addTo(map);
+
+            marker.bindPopup(formatPopup(p));
+
+            if (isActive) {
+                marker.openPopup();
+            }
+        });
+
+        // Fit Map Bounds
+        map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+
+        // Delayed Invalidation for seamless CSS rendering
+        setTimeout(function () {
+            map.invalidateSize();
+        }, 250);
+    });
+</script>
+@endpush
 @endsection

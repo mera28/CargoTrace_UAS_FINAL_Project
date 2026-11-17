@@ -57,6 +57,7 @@ Route::middleware('auth')->group(function () {
     // Admin Only Master Data Routes
     Route::middleware('role:admin')->group(function () {
         Route::resource('carriers', CarrierController::class)->except(['create', 'show', 'edit']);
+        Route::get('/locations/geocode', [LocationController::class, 'geocode'])->name('locations.geocode');
         Route::resource('locations', LocationController::class)->except(['create', 'show', 'edit']);
     });
 });

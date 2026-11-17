@@ -6,6 +6,7 @@ use App\Models\Carrier;
 use App\Models\Location;
 use App\Models\Shipment;
 use App\Models\User;
+use App\Services\ExternalLogisticsService;
 use App\Services\ShipmentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -83,7 +84,7 @@ class ShipmentController extends Controller
     /**
      * Display the specified shipment.
      */
-    public function show(Shipment $shipment): View
+    public function show(Shipment $shipment, ExternalLogisticsService $logisticsService): View
     {
         // Role check: Customer can only view their own shipment
         if (auth()->user()->isCustomer() && $shipment->customer_id !== auth()->id()) {
@@ -101,7 +102,29 @@ class ShipmentController extends Controller
             'notifications',
         ]);
 
-        return view('shipments.show', compact('shipment'));
+        // Determine coordinates for operational weather context:
+        // Prioritize latest recorded tracking event coordinates; fallback to destination location
+        $latestEventWithCoords = $shipment->trackingEvents
+            ->sortByDesc('event_time')
+            ->first(fn ($event) => !is_null($event->latitude) && !is_null($event->longitude));
+
+        if ($latestEventWithCoords) {
+            $weatherLat = (float) $latestEventWithCoords->latitude;
+            $weatherLon = (float) $latestEventWithCoords->longitude;
+            $weatherLocationName = $latestEventWithCoords->location_name;
+            $weatherContextType = 'Current Position';
+        } else {
+            $weatherLat = (float) $shipment->destinationLocation->latitude;
+            $weatherLon = (float) $shipment->destinationLocation->longitude;
+            $weatherLocationName = $shipment->destinationLocation->name;
+            $weatherContextType = 'Destination Port';
+        }
+
+        $weather = $logisticsService->getLocationWeather($weatherLat, $weatherLon);
+        $weather['location_name'] = $weatherLocationName;
+        $weather['context_type'] = $weatherContextType;
+
+        return view('shipments.show', compact('shipment', 'weather'));
     }
 
     /**
