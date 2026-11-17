@@ -1,8 +1,11 @@
 <?php
 
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CarrierController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LocationController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ShipmentController;
 use App\Http\Controllers\ShipmentExceptionController;
 use App\Http\Controllers\TrackingEventController;
@@ -27,9 +30,12 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // In-App Notifications (All authenticated users)
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
 
     // Admin & Operator Shipment & Operations Management Routes
     Route::middleware('role:admin,operator')->group(function () {
@@ -54,10 +60,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/shipments', [ShipmentController::class, 'index'])->name('shipments.index');
     Route::get('/shipments/{shipment}', [ShipmentController::class, 'show'])->name('shipments.show');
 
-    // Admin Only Master Data Routes
+    // Admin Only Master Data & Audit Routes
     Route::middleware('role:admin')->group(function () {
         Route::resource('carriers', CarrierController::class)->except(['create', 'show', 'edit']);
         Route::get('/locations/geocode', [LocationController::class, 'geocode'])->name('locations.geocode');
         Route::resource('locations', LocationController::class)->except(['create', 'show', 'edit']);
+        Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
     });
 });

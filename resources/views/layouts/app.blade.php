@@ -129,7 +129,7 @@
                     </a>
 
                     <!-- Audit Logs (Admin Only) -->
-                    <a href="#" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800/70 hover:text-white transition-colors">
+                    <a href="{{ route('audit-logs.index') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg {{ request()->routeIs('audit-logs.*') ? 'bg-ocean-600 text-white font-semibold shadow-sm' : 'text-slate-300 hover:bg-slate-800/70 hover:text-white' }} transition-colors">
                         <svg class="w-5 h-5 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
@@ -166,6 +166,24 @@
             <!-- Right Profile & Action Section -->
             @auth
             <div class="flex items-center space-x-4">
+                <!-- Notifications Bell Icon -->
+                @php
+                    $unreadNotificationsCount = auth()->user()->notifications()->where('is_read', false)->count();
+                @endphp
+                <a href="{{ route('notifications.index') }}" class="relative p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors" title="Notifications">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                    @if($unreadNotificationsCount > 0)
+                        <span class="absolute top-1 right-1 flex h-4 min-w-4 px-1 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white ring-2 ring-white">
+                            {{ $unreadNotificationsCount > 9 ? '9+' : $unreadNotificationsCount }}
+                        </span>
+                    @endif
+                </a>
+
+                <!-- Divider -->
+                <div class="h-6 w-px bg-slate-200"></div>
+
                 <div class="text-right">
                     <div class="text-sm font-semibold text-slate-800">{{ auth()->user()->name }}</div>
                     <div class="text-xs text-slate-500">{{ auth()->user()->company_name ?? auth()->user()->email }}</div>
