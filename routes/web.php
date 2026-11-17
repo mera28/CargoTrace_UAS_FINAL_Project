@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CarrierController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\ShipmentController;
+use App\Http\Controllers\ShipmentExceptionController;
 use App\Http\Controllers\TrackingEventController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -40,6 +41,13 @@ Route::middleware('auth')->group(function () {
 
         // Record tracking events
         Route::post('/shipments/{shipment}/tracking-events', [TrackingEventController::class, 'store'])->name('shipments.tracking-events.store');
+
+        // ETA & Delay management
+        Route::post('/shipments/{shipment}/eta', [ShipmentExceptionController::class, 'updateEta'])->name('shipments.eta.update');
+
+        // Shipment Exceptions management
+        Route::post('/shipments/{shipment}/exceptions', [ShipmentExceptionController::class, 'store'])->name('shipments.exceptions.store');
+        Route::patch('/exceptions/{exception}/status', [ShipmentExceptionController::class, 'updateStatus'])->name('exceptions.status.update');
     });
 
     // Shipment Read Routes (All authenticated roles)

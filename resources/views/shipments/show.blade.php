@@ -4,11 +4,13 @@
     $latestEvent = $shipment->trackingEvents->sortByDesc('event_time')->first();
     $trackingService = app(\App\Services\TrackingService::class);
     $allowedNextStatuses = $trackingService->getAllowedNextStatuses($shipment->current_status);
+    $thresholdHours = config('cargotrace.delay_threshold_hours', 12);
+    $exceptionTypes = config('cargotrace.exception_types', ['CUSTOMS_HOLD', 'WEATHER_DELAY', 'PORT_CONGESTION', 'DAMAGED', 'MISROUTED', 'DOCUMENTATION_ISSUE']);
 @endphp
 
 @section('title', 'Shipment ' . $shipment->shipment_number)
 @section('header-title', 'Consignment Details')
-@section('header-subtitle', 'Real-time tracking milestones and cargo manifest for ' . $shipment->shipment_number)
+@section('header-subtitle', 'Real-time tracking, ETA evaluation, and risk incidents for ' . $shipment->shipment_number)
 
 @section('content')
 <div class="space-y-6">
@@ -108,7 +110,7 @@
         </div>
     </div>
 
-    <!-- Current Location Banner (Requirement: Top of shipment details from latest valid tracking event) -->
+    <!-- Current Location Banner -->
     <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div class="flex items-start space-x-3.5">
             <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-ocean-600 to-sky-400 text-white flex items-center justify-center flex-shrink-0 shadow-md shadow-ocean-600/20">
@@ -147,83 +149,97 @@
         </div>
     </div>
 
-    <!-- Metrics Stat Tiles (4 Grid) -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Gross Weight</div>
-            <div class="text-lg font-bold text-slate-900 mt-1">
-                {{ number_format($shipment->total_weight, 2) }} <span class="text-xs font-normal text-slate-500">kg</span>
+    <!-- ETA & DELAY DETECTION CONTROL CARD (Phase 10 Implementation) -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-3">
+            <div>
+                <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
+                    <svg class="w-4 h-4 text-ocean-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>ETA Evaluation & Delay Intelligence</span>
+                </h3>
+                <p class="text-xs text-slate-500">
+                    Business Rule: Threshold is <strong class="text-slate-700">{{ $thresholdHours }} Hours</strong>. Delays &ge; {{ $thresholdHours }}h trigger proactive alerts & severity rating.
+                </p>
             </div>
+
+            @if(auth()->user()->isAdmin() || auth()->user()->isOperator())
+                <button type="button" onclick="openEtaModal()"
+                    class="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold shadow-sm transition-colors self-start sm:self-auto">
+                    <svg class="w-3.5 h-3.5 text-ocean-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                    <span>Recalibrate ETA</span>
+                </button>
+            @endif
         </div>
 
-        <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Cargo Volume</div>
-            <div class="text-lg font-bold text-slate-900 mt-1">
-                {{ number_format($shipment->total_volume, 2) }} <span class="text-xs font-normal text-slate-500">cbm</span>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Manifest Line Items</div>
-            <div class="text-lg font-bold text-slate-900 mt-1">
-                {{ $shipment->items->count() }} <span class="text-xs font-normal text-slate-500">skus</span>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Delay Tolerance</div>
-            <div class="text-lg font-bold {{ $shipment->is_delayed ? 'text-rose-600' : 'text-emerald-600' }} mt-1">
-                {{ $shipment->delay_hours }}h <span class="text-xs font-normal text-slate-500">(Max 12h threshold)</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Schedule Card -->
-    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <h3 class="text-sm font-bold text-slate-900 mb-4 flex items-center space-x-2">
-            <svg class="w-4 h-4 text-ocean-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-            <span>Voyage Schedule & Milestones</span>
-        </h3>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
-            <div class="p-4 rounded-xl bg-slate-50 border border-slate-100">
-                <div class="text-slate-400 font-semibold uppercase tracking-wider text-[11px]">Expected Departure (ETD)</div>
-                <div class="text-sm font-bold text-slate-900 mt-1">{{ $shipment->expected_departure->format('l, d F Y - H:i') }} UTC</div>
-                <div class="text-[11px] text-slate-500 mt-0.5">{{ $shipment->originLocation->name }}</div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
+            <!-- Expected Arrival -->
+            <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+                <div class="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Expected Arrival (Contracted)</div>
+                <div class="text-sm font-bold text-slate-900 mt-1">{{ $shipment->expected_arrival->format('d M Y - H:i') }} UTC</div>
+                <div class="text-[11px] text-slate-500 mt-0.5">Destination: {{ $shipment->destinationLocation->name }}</div>
             </div>
 
-            <div class="p-4 rounded-xl bg-slate-50 border border-slate-100">
-                <div class="text-slate-400 font-semibold uppercase tracking-wider text-[11px]">Expected Arrival (ETA)</div>
-                <div class="text-sm font-bold text-slate-900 mt-1">{{ $shipment->expected_arrival->format('l, d F Y - H:i') }} UTC</div>
-                <div class="text-[11px] text-slate-500 mt-0.5">{{ $shipment->destinationLocation->name }}</div>
-            </div>
-
-            <div class="p-4 rounded-xl {{ $shipment->is_delayed ? 'bg-amber-50/60 border border-amber-200/60' : 'bg-slate-50 border border-slate-100' }}">
-                <div class="text-slate-400 font-semibold uppercase tracking-wider text-[11px]">Estimated / Actual Arrival</div>
-                <div class="text-sm font-bold {{ $shipment->is_delayed ? 'text-amber-800' : 'text-slate-900' }} mt-1">
-                    {{ $shipment->estimated_arrival ? $shipment->estimated_arrival->format('l, d F Y - H:i') . ' UTC' : 'Pending Update' }}
+            <!-- Estimated Arrival -->
+            <div class="p-4 rounded-xl {{ $shipment->is_delayed ? 'bg-amber-50/70 border border-amber-200' : 'bg-slate-50 border border-slate-200/80' }}">
+                <div class="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Estimated Arrival (Current Forecast)</div>
+                <div class="text-sm font-bold {{ $shipment->is_delayed ? 'text-amber-900' : 'text-slate-900' }} mt-1">
+                    {{ $shipment->estimated_arrival ? $shipment->estimated_arrival->format('d M Y - H:i') . ' UTC' : 'Pending Calculation' }}
                 </div>
-                @if($shipment->is_delayed)
-                    <div class="text-[11px] text-amber-700 font-semibold mt-0.5">
-                        Variance: +{{ $shipment->delay_hours }} hours late
-                    </div>
-                @else
-                    <div class="text-[11px] text-emerald-600 font-semibold mt-0.5">Estimated on time</div>
-                @endif
+                <div class="text-[11px] {{ $shipment->is_delayed ? 'text-amber-700 font-semibold' : 'text-slate-500' }} mt-0.5">
+                    {{ $shipment->is_delayed ? "+{$shipment->delay_hours}h past contract" : 'Aligned with baseline' }}
+                </div>
+            </div>
+
+            <!-- Delay Duration & Severity -->
+            <div class="p-4 rounded-xl {{ $shipment->is_delayed ? ($shipment->delay_severity === 'HIGH' ? 'bg-rose-50 border border-rose-200' : 'bg-amber-50 border border-amber-200') : 'bg-emerald-50/50 border border-emerald-200/70' }}">
+                <div class="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Calculated Variance & Severity</div>
+                <div class="text-sm font-bold mt-1 flex items-center space-x-2">
+                    <span class="{{ $shipment->is_delayed ? ($shipment->delay_severity === 'HIGH' ? 'text-rose-700' : 'text-amber-800') : 'text-emerald-700' }}">
+                        {{ $shipment->delay_hours }} Hours
+                    </span>
+                    @if($shipment->is_delayed)
+                        <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase {{ $shipment->delay_severity === 'HIGH' ? 'bg-rose-200 text-rose-900' : ($shipment->delay_severity === 'MEDIUM' ? 'bg-amber-200 text-amber-900' : 'bg-sky-200 text-sky-900') }}">
+                            {{ $shipment->delay_severity }}
+                        </span>
+                    @else
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 uppercase">
+                            ON-TIME
+                        </span>
+                    @endif
+                </div>
+                <div class="text-[11px] text-slate-500 mt-0.5">Threshold trigger: &ge; {{ $thresholdHours }}h</div>
+            </div>
+
+            <!-- KPI Compliance -->
+            <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+                <div class="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Primary KPI Compliance</div>
+                <div class="text-sm font-bold mt-1 flex items-center space-x-1.5">
+                    @if(!$shipment->is_delayed)
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                        <span class="text-emerald-700 font-bold">Compliant (On-Time)</span>
+                    @else
+                        <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+                        <span class="text-rose-700 font-bold">KPI Breached</span>
+                    @endif
+                </div>
+                <div class="text-[11px] text-slate-500 mt-0.5">{{ config('cargotrace.primary_kpi') }}</div>
             </div>
         </div>
 
         @if($shipment->delay_reason)
-            <div class="mt-4 p-3.5 rounded-xl bg-amber-50 border border-amber-200/80 text-xs text-amber-900">
-                <span class="font-bold">Recorded Delay Reason:</span> {{ $shipment->delay_reason }}
+            <div class="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start space-x-2">
+                <svg class="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                <div>
+                    <strong class="font-bold">Official Delay Justification:</strong> {{ $shipment->delay_reason }}
+                </div>
             </div>
         @endif
     </div>
 
-    <!-- TRACKING TIMELINE & ADD EVENT SECTION (Phase 9 Implementation) -->
+    <!-- TRACKING TIMELINE & ADD EVENT SECTION (Phase 9) -->
     <div class="grid grid-cols-1 {{ (auth()->user()->isAdmin() || auth()->user()->isOperator()) && $shipment->current_status !== 'DELIVERED' ? 'lg:grid-cols-3' : '' }} gap-6">
 
-        <!-- Tracking Timeline (Vertical Progressive Milestone Tree) -->
+        <!-- Tracking Timeline -->
         <div class="{{ (auth()->user()->isAdmin() || auth()->user()->isOperator()) && $shipment->current_status !== 'DELIVERED' ? 'lg:col-span-2' : 'w-full' }} bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-5">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div>
@@ -243,7 +259,8 @@
                     @foreach($shipment->trackingEvents->sortBy('event_time') as $idx => $event)
                         @php
                             $isDelivered = $event->status === 'DELIVERED';
-                            $isWarning = str_contains(strtolower($event->description), 'customs') || str_contains(strtolower($event->description), 'hold') || str_contains(strtolower($event->description), 'delay');
+                            $isExceptionEvent = str_starts_with($event->description, '[EXCEPTION');
+                            $isWarning = $isExceptionEvent || str_contains(strtolower($event->description), 'customs') || str_contains(strtolower($event->description), 'hold') || str_contains(strtolower($event->description), 'delay');
                         @endphp
                         <div class="relative group">
                             <!-- Timeline Dot Icon -->
@@ -258,10 +275,10 @@
                             </div>
 
                             <!-- Milestone Box -->
-                            <div class="p-4 rounded-xl border {{ $isWarning ? 'bg-amber-50/40 border-amber-200' : 'bg-slate-50/70 border-slate-200' }} shadow-2xs transition-colors">
+                            <div class="p-4 rounded-xl border {{ $isExceptionEvent ? 'bg-rose-50/50 border-rose-200' : ($isWarning ? 'bg-amber-50/40 border-amber-200' : 'bg-slate-50/70 border-slate-200') }} shadow-2xs transition-colors">
                                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
                                     <div class="flex items-center space-x-2">
-                                        <span class="px-2 py-0.5 rounded text-[11px] font-bold uppercase {{ $isDelivered ? 'bg-emerald-100 text-emerald-800' : ($isWarning ? 'bg-amber-100 text-amber-800' : 'bg-sky-100 text-sky-800') }}">
+                                        <span class="px-2 py-0.5 rounded text-[11px] font-bold uppercase {{ $isDelivered ? 'bg-emerald-100 text-emerald-800' : ($isExceptionEvent ? 'bg-rose-100 text-rose-800' : ($isWarning ? 'bg-amber-100 text-amber-800' : 'bg-sky-100 text-sky-800')) }}">
                                             {{ $event->status }}
                                         </span>
                                         <span class="text-sm font-bold text-slate-900">{{ $event->location_name }}</span>
@@ -292,7 +309,7 @@
             @endif
         </div>
 
-        <!-- Add Tracking Event Form (Admin & Operator only, when status is not DELIVERED) -->
+        <!-- Add Tracking Event Form (Admin & Operator only) -->
         @if((auth()->user()->isAdmin() || auth()->user()->isOperator()) && $shipment->current_status !== 'DELIVERED')
             <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4 self-start">
                 <div class="border-b border-slate-100 pb-3">
@@ -300,14 +317,13 @@
                         <svg class="w-4 h-4 text-ocean-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                         <span>Add Tracking Milestone</span>
                     </h3>
-                    <p class="text-xs text-slate-500">Record a new progressive waypoint or terminal handover</p>
+                    <p class="text-xs text-slate-500">Progressive status milestone for this consignment</p>
                 </div>
 
                 @if(count($allowedNextStatuses) > 0)
                     <form action="{{ route('shipments.tracking-events.store', $shipment) }}" method="POST" class="space-y-4">
                         @csrf
 
-                        <!-- Allowed Next Status Dropdown -->
                         <div>
                             <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
                                 Next Allowed Status *
@@ -322,59 +338,137 @@
                                     </option>
                                 @endforeach
                             </select>
-                            <p class="text-[10px] text-slate-400 mt-1">Current state is <strong class="text-slate-600">{{ $shipment->current_status }}</strong></p>
                         </div>
 
-                        <!-- Location Name -->
                         <div>
                             <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Location Name *</label>
-                            <input type="text" name="location_name" required placeholder="e.g. Suez Canal Anchorage"
+                            <input type="text" name="location_name" required placeholder="e.g. Red Sea Transit"
                                 class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-ocean-500">
                         </div>
 
-                        <!-- Coordinates (2 columns) -->
                         <div class="grid grid-cols-2 gap-3">
                             <div>
                                 <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Latitude</label>
-                                <input type="number" step="0.0000001" name="latitude" placeholder="e.g. 29.9753"
+                                <input type="number" step="0.0000001" name="latitude" placeholder="e.g. 21.4858"
                                     class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-ocean-500">
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Longitude</label>
-                                <input type="number" step="0.0000001" name="longitude" placeholder="e.g. 32.5599"
+                                <input type="number" step="0.0000001" name="longitude" placeholder="e.g. 39.1925"
                                     class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-ocean-500">
                             </div>
                         </div>
 
-                        <!-- Event Time -->
                         <div>
                             <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Event Timestamp (UTC) *</label>
                             <input type="datetime-local" name="event_time" value="{{ now()->format('Y-m-d\TH:i') }}" required
                                 class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-ocean-500">
-                            <p class="text-[10px] text-slate-400 mt-1">Must be chronological (equal or after prior event)</p>
                         </div>
 
-                        <!-- Description -->
                         <div>
                             <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Milestone Description *</label>
-                            <textarea name="description" rows="3" required placeholder="Detailed operational update on vessel/carrier status..."
+                            <textarea name="description" rows="3" required placeholder="Describe voyage milestone..."
                                 class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-ocean-500"></textarea>
                         </div>
 
-                        <!-- Submit Button -->
                         <button type="submit" class="w-full py-2.5 px-4 bg-gradient-to-r from-ocean-600 to-sky-600 hover:from-ocean-500 hover:to-sky-500 text-white font-bold rounded-xl text-xs shadow-md shadow-ocean-600/30 transition-all flex items-center justify-center space-x-1.5">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                             <span>Record Milestone</span>
                         </button>
                     </form>
-                @else
-                    <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-500 text-center">
-                        Shipment has reached terminal status. No further milestones can be added.
-                    </div>
                 @endif
             </div>
         @endif
 
+    </div>
+
+    <!-- SHIPMENT EXCEPTIONS & RISK INCIDENTS (Phase 10 Implementation) -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-3">
+            <div>
+                <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
+                    <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <span>Shipment Exceptions & Customs Clearance Holds</span>
+                </h3>
+                <p class="text-xs text-slate-500">Focus Scenario: Primary disruption type is <strong class="text-slate-700">CUSTOMS_HOLD</strong> along the SEA &rarr; Europe corridor</p>
+            </div>
+
+            @if(auth()->user()->isAdmin() || auth()->user()->isOperator())
+                <button type="button" onclick="openExceptionModal()"
+                    class="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-semibold shadow-sm transition-colors self-start sm:self-auto">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    <span>+ Report Incident / Exception</span>
+                </button>
+            @endif
+        </div>
+
+        @if($shipment->exceptions->count() > 0)
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                @foreach($shipment->exceptions as $exc)
+                    <div class="p-4 rounded-xl border {{ $exc->status === 'OPEN' ? 'bg-rose-50/50 border-rose-200' : ($exc->status === 'INVESTIGATING' ? 'bg-amber-50/50 border-amber-200' : 'bg-slate-50 border-slate-200') }} text-xs space-y-3">
+                        <div class="flex items-start justify-between gap-2">
+                            <div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-extrabold text-slate-900 text-sm">{{ $exc->exception_type }}</span>
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase {{ $exc->severity === 'HIGH' ? 'bg-rose-100 text-rose-800' : ($exc->severity === 'MEDIUM' ? 'bg-amber-100 text-amber-800' : 'bg-sky-100 text-sky-800') }}">
+                                        {{ $exc->severity }} SEVERITY
+                                    </span>
+                                </div>
+                                <div class="text-[10px] text-slate-400 font-mono mt-0.5">Reported by {{ $exc->reporter->name ?? 'Staff' }}</div>
+                            </div>
+
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide {{ $exc->status === 'RESOLVED' ? 'bg-emerald-100 text-emerald-800' : ($exc->status === 'INVESTIGATING' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800') }}">
+                                {{ $exc->status }}
+                            </span>
+                        </div>
+
+                        <p class="text-xs text-slate-700 leading-relaxed bg-white/70 p-2.5 rounded-lg border border-slate-200/50">
+                            {{ $exc->description }}
+                        </p>
+
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-slate-200/60 text-[11px] text-slate-400 font-mono">
+                            <div>
+                                <span>Detected: {{ $exc->detected_at->format('d M Y H:i') }}</span>
+                                @if($exc->resolved_at)
+                                    <span class="text-emerald-700 font-semibold ml-2">Resolved: {{ $exc->resolved_at->format('d M Y H:i') }}</span>
+                                @endif
+                            </div>
+
+                            <!-- Fast Action Status Transition (Admin & Operator only) -->
+                            @if(auth()->user()->isAdmin() || auth()->user()->isOperator())
+                                <div class="flex items-center space-x-1.5 self-end sm:self-auto font-sans">
+                                    @if($exc->status === 'OPEN')
+                                        <form action="{{ route('exceptions.status.update', $exc) }}" method="POST" class="inline">
+                                            @csrf
+                                            @method('PATCH')
+                                            <input type="hidden" name="status" value="INVESTIGATING">
+                                            <button type="submit" class="px-2 py-1 rounded bg-amber-100 hover:bg-amber-200 text-amber-800 text-[10px] font-bold transition-colors">
+                                                Investigate
+                                            </button>
+                                        </form>
+                                    @endif
+
+                                    @if($exc->status !== 'RESOLVED')
+                                        <form action="{{ route('exceptions.status.update', $exc) }}" method="POST" class="inline">
+                                            @csrf
+                                            @method('PATCH')
+                                            <input type="hidden" name="status" value="RESOLVED">
+                                            <button type="submit" class="px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold shadow-sm transition-colors">
+                                                Resolve
+                                            </button>
+                                        </form>
+                                    @endif
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @else
+            <div class="p-8 text-center text-xs text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                <svg class="w-8 h-8 text-emerald-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span>No active customs holds or operational disruptions reported for this consignment.</span>
+            </div>
+        @endif
     </div>
 
     <!-- Cargo Manifest Items Table -->
@@ -427,49 +521,6 @@
         </div>
     </div>
 
-    <!-- Exceptions & Risk Incidents Section -->
-    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
-        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
-                <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                <span>Exceptions & Risk Incidents</span>
-            </h3>
-            <span class="text-[11px] text-slate-400 font-mono">{{ $shipment->exceptions->count() }} Reported</span>
-        </div>
-
-        @if($shipment->exceptions->count() > 0)
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                @foreach($shipment->exceptions as $exc)
-                    <div class="p-4 rounded-xl border {{ $exc->status === 'OPEN' ? 'bg-rose-50/60 border-rose-200' : ($exc->status === 'INVESTIGATING' ? 'bg-amber-50/60 border-amber-200' : 'bg-slate-50 border-slate-200') }} text-xs">
-                        <div class="flex items-center justify-between mb-1.5">
-                            <span class="font-bold text-slate-900 flex items-center space-x-2">
-                                <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase {{ $exc->severity === 'HIGH' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800' }}">
-                                    {{ $exc->severity }}
-                                </span>
-                                <span>{{ $exc->exception_type }}</span>
-                            </span>
-                            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase {{ $exc->status === 'RESOLVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700' }}">
-                                {{ $exc->status }}
-                            </span>
-                        </div>
-                        <p class="text-slate-700 mt-1">{{ $exc->description }}</p>
-                        <div class="text-[10px] text-slate-400 mt-2 flex items-center justify-between">
-                            <span>Detected: {{ $exc->detected_at->format('d M Y H:i') }}</span>
-                            @if($exc->resolved_at)
-                                <span class="text-emerald-700 font-medium">Resolved: {{ $exc->resolved_at->format('d M Y H:i') }}</span>
-                            @endif
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        @else
-            <div class="p-6 text-center text-xs text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                <svg class="w-8 h-8 text-emerald-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                <span>No active exceptions or customs holds recorded for this consignment.</span>
-            </div>
-        @endif
-    </div>
-
     <!-- Maritime Route Overview Card -->
     <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
         <h3 class="text-sm font-bold text-slate-900 mb-2 flex items-center space-x-2">
@@ -494,4 +545,134 @@
     </div>
 
 </div>
+
+<!-- Recalibrate ETA Modal (Admin & Operator) -->
+@if(auth()->user()->isAdmin() || auth()->user()->isOperator())
+<div id="etaModal" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+            <div>
+                <h3 class="text-base font-bold text-slate-900">Recalibrate Estimated Arrival</h3>
+                <p class="text-xs text-slate-500">Calculate delay variance against contracted ETA</p>
+            </div>
+            <button type="button" onclick="closeEtaModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <form action="{{ route('shipments.eta.update', $shipment) }}" method="POST" class="space-y-4 text-xs">
+            @csrf
+
+            <div class="p-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-600">
+                <div>Expected Arrival: <strong class="text-slate-900">{{ $shipment->expected_arrival->format('d M Y - H:i') }} UTC</strong></div>
+                <div class="mt-0.5">Tolerance Threshold: <strong class="text-slate-900">{{ $thresholdHours }} Hours</strong></div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">New Estimated Arrival (ETA) *</label>
+                <input type="datetime-local" name="estimated_arrival" required
+                    value="{{ $shipment->estimated_arrival ? $shipment->estimated_arrival->format('Y-m-d\TH:i') : $shipment->expected_arrival->format('Y-m-d\TH:i') }}"
+                    class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-ocean-500">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Delay Reason (if delayed)</label>
+                <textarea name="delay_reason" rows="3" placeholder="e.g. Weather disruption in Bay of Bengal or Port congestion at Suez"
+                    class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-ocean-500">{{ $shipment->delay_reason }}</textarea>
+            </div>
+
+            <div class="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100">
+                <button type="button" onclick="closeEtaModal()" class="px-4 py-2 border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-50">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-ocean-600 hover:bg-ocean-500 text-white rounded-lg text-xs font-semibold shadow-sm">Save & Evaluate</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Report Exception Modal (Admin & Operator) -->
+<div id="exceptionModal" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+            <div>
+                <h3 class="text-base font-bold text-slate-900">Report Operational Incident / Exception</h3>
+                <p class="text-xs text-slate-500">Record a customs hold, port congestion, or risk event</p>
+            </div>
+            <button type="button" onclick="closeExceptionModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <form action="{{ route('shipments.exceptions.store', $shipment) }}" method="POST" class="space-y-4 text-xs">
+            @csrf
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Disruption Type *</label>
+                    <select name="exception_type" required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-ocean-500">
+                        @foreach($exceptionTypes as $type)
+                            <option value="{{ $type }}" {{ $type === 'CUSTOMS_HOLD' ? 'selected' : '' }}>
+                                {{ $type }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Severity Rating *</label>
+                    <select name="severity" required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-ocean-500">
+                        <option value="LOW">LOW</option>
+                        <option value="MEDIUM" selected>MEDIUM</option>
+                        <option value="HIGH">HIGH</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Checkpoint / Location Name</label>
+                <input type="text" name="location_name" placeholder="e.g. Suez Anchorage / Port Customs Gateway"
+                    class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-ocean-500">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Latitude</label>
+                    <input type="number" step="0.0000001" name="latitude" placeholder="e.g. 29.9500"
+                        class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-ocean-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Longitude</label>
+                    <input type="number" step="0.0000001" name="longitude" placeholder="e.g. 32.5500"
+                        class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-ocean-500">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Incident Description & Root Cause *</label>
+                <textarea name="description" rows="3" required placeholder="Specify documentation audit, quarantine hold, or physical inspection details..."
+                    class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-ocean-500"></textarea>
+            </div>
+
+            <div class="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100">
+                <button type="button" onclick="closeExceptionModal()" class="px-4 py-2 border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-50">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold shadow-sm">Report Exception</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openEtaModal() {
+        document.getElementById('etaModal').classList.remove('hidden');
+    }
+    function closeEtaModal() {
+        document.getElementById('etaModal').classList.add('hidden');
+    }
+    function openExceptionModal() {
+        document.getElementById('exceptionModal').classList.remove('hidden');
+    }
+    function closeExceptionModal() {
+        document.getElementById('exceptionModal').classList.add('hidden');
+    }
+</script>
+@endif
 @endsection
