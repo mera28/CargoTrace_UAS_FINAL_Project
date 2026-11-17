@@ -1,0 +1,398 @@
+{
+  "info": {
+    "_postman_id": "cargotrace-rest-api-v1",
+    "name": "CargoTrace REST API Collection",
+    "description": "Comprehensive Postman collection for CargoTrace Global Shipment Visibility & Tracking Platform (Southeast Asia to Europe Corridor). Powered by Laravel 12 Sanctum.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000/api",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Alex Chen\",\n  \"email\": \"alex.chen@globaltrade.test\",\n  \"password\": \"password123\",\n  \"password_confirmation\": \"password123\",\n  \"company_name\": \"Global Trade Exports Ltd\",\n  \"phone\": \"+65-9123-4567\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/register",
+              "host": ["{{base_url}}"],
+              "path": ["register"]
+            },
+            "description": "Registers a new customer account and automatically generates a Sanctum Bearer token."
+          }
+        },
+        {
+          "name": "Login (Operator / Admin / Customer)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data && jsonData.data.token) {",
+                  "    pm.collectionVariables.set('token', jsonData.data.token);",
+                  "    console.log('Sanctum token automatically stored in collection variable: ' + jsonData.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"operator@cargotrace.test\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/login",
+              "host": ["{{base_url}}"],
+              "path": ["login"]
+            },
+            "description": "Authenticates user credentials and stores the returned Bearer token in the {{token}} variable."
+          }
+        },
+        {
+          "name": "Get Authenticated User Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/user",
+              "host": ["{{base_url}}"],
+              "path": ["user"]
+            },
+            "description": "Returns the authenticated user object, company name, and assigned role."
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/logout",
+              "host": ["{{base_url}}"],
+              "path": ["logout"]
+            },
+            "description": "Revokes the active Sanctum access token."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Shipments",
+      "item": [
+        {
+          "name": "List Shipments (Filtered / Scoped)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/shipments?status=IN_TRANSIT",
+              "host": ["{{base_url}}"],
+              "path": ["shipments"],
+              "query": [
+                { "key": "status", "value": "IN_TRANSIT" },
+                { "key": "is_delayed", "value": "1", "disabled": true },
+                { "key": "search", "value": "CT-2026", "disabled": true }
+              ]
+            },
+            "description": "Retrieves paginated shipments list. Customer accounts automatically receive only their own consignments."
+          }
+        },
+        {
+          "name": "Get Shipment Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/shipments/1",
+              "host": ["{{base_url}}"],
+              "path": ["shipments", "1"]
+            },
+            "description": "Retrieves complete consignment information including origin, destination, carrier, manifest items, and exceptions."
+          }
+        },
+        {
+          "name": "Create Shipment (Admin / Operator)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_id\": 3,\n  \"carrier_id\": 1,\n  \"origin_location_id\": 1,\n  \"destination_location_id\": 4,\n  \"cargo_type\": \"Specialty Robusta Coffee\",\n  \"expected_departure\": \"2026-11-20 08:00:00\",\n  \"expected_arrival\": \"2026-12-14 18:00:00\",\n  \"items\": [\n    {\n      \"item_name\": \"Lampung Premium Robusta Grade 1\",\n      \"sku\": \"COF-LMP-01\",\n      \"quantity\": 500,\n      \"weight\": 2500.00,\n      \"volume\": 45.00\n    },\n    {\n      \"item_name\": \"Mandheling Arabica Specialty\",\n      \"sku\": \"COF-MDH-02\",\n      \"quantity\": 300,\n      \"weight\": 1500.00,\n      \"volume\": 30.00\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/shipments",
+              "host": ["{{base_url}}"],
+              "path": ["shipments"]
+            },
+            "description": "Registers a new consignment, calculates total manifest metrics, and records initial CREATED milestone."
+          }
+        },
+        {
+          "name": "Update Shipment (Admin / Operator)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_id\": 3,\n  \"carrier_id\": 1,\n  \"origin_location_id\": 1,\n  \"destination_location_id\": 4,\n  \"cargo_type\": \"Specialty Robusta Coffee (Updated)\",\n  \"expected_departure\": \"2026-11-20 08:00:00\",\n  \"expected_arrival\": \"2026-12-15 12:00:00\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/shipments/1",
+              "host": ["{{base_url}}"],
+              "path": ["shipments", "1"]
+            },
+            "description": "Updates non-delivered shipment parameters and records audit trail."
+          }
+        },
+        {
+          "name": "Delete Shipment (Admin / Operator)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/shipments/5",
+              "host": ["{{base_url}}"],
+              "path": ["shipments", "5"]
+            },
+            "description": "Deletes a shipment in CREATED status along with its manifest items and tracking events."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tracking Milestones",
+      "item": [
+        {
+          "name": "Get Tracking Timeline",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/shipments/1/tracking",
+              "host": ["{{base_url}}"],
+              "path": ["shipments", "1", "tracking"]
+            },
+            "description": "Returns immutable chronologically-ordered tracking milestone timeline with GPS coordinates."
+          }
+        },
+        {
+          "name": "Record Tracking Milestone (Admin / Operator)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"IN_TRANSIT\",\n  \"location_name\": \"Suez Canal Northbound Transit\",\n  \"latitude\": 30.5852,\n  \"longitude\": 32.2654,\n  \"event_time\": \"2026-11-25 14:30:00\",\n  \"description\": \"Vessel convoy entering the Great Bitter Lake section of the Suez Canal corridor en route to Europe.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/shipments/2/tracking",
+              "host": ["{{base_url}}"],
+              "path": ["shipments", "2", "tracking"]
+            },
+            "description": "Appends a new chronological milestone. Validates strict state transition (CREATED -> BOOKED -> PICKED_UP -> IN_TRANSIT -> DELIVERED)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Shipment Exceptions & Risk",
+      "item": [
+        {
+          "name": "List Shipment Exceptions",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/shipments/2/exceptions",
+              "host": ["{{base_url}}"],
+              "path": ["shipments", "2", "exceptions"]
+            },
+            "description": "Lists operational disruptions (CUSTOMS_HOLD, WEATHER_DELAY, etc.) for a specific shipment."
+          }
+        },
+        {
+          "name": "Report Incident / Exception (Admin / Operator)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exception_type\": \"CUSTOMS_HOLD\",\n  \"severity\": \"MEDIUM\",\n  \"description\": \"EUR.1 Certificate of Origin documentation audit requested by customs clearance inspection.\",\n  \"location_name\": \"Rotterdam Delta Terminal Customs Gateway\",\n  \"latitude\": 51.9567,\n  \"longitude\": 4.1482\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/shipments/2/exceptions",
+              "host": ["{{base_url}}"],
+              "path": ["shipments", "2", "exceptions"]
+            },
+            "description": "Logs an operational exception, auto-injects an entry into the tracking timeline, and notifies the shipper."
+          }
+        },
+        {
+          "name": "Update Exception Status (Admin / Operator)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"RESOLVED\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/exceptions/1",
+              "host": ["{{base_url}}"],
+              "path": ["exceptions", "1"]
+            },
+            "description": "Advances exception status (OPEN -> INVESTIGATING -> RESOLVED) and fills resolved_at timestamp."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Master Data",
+      "item": [
+        {
+          "name": "List Carriers",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carriers",
+              "host": ["{{base_url}}"],
+              "path": ["carriers"]
+            },
+            "description": "Lists global ocean/air carriers."
+          }
+        },
+        {
+          "name": "Create Carrier (Admin Only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Hapag-Lloyd\",\n  \"code\": \"HLCU\",\n  \"type\": \"SEA\",\n  \"contact_email\": \"customer.service@hlag.com\",\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/carriers",
+              "host": ["{{base_url}}"],
+              "path": ["carriers"]
+            },
+            "description": "Creates a new carrier record and registers audit log."
+          }
+        },
+        {
+          "name": "List Locations",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/locations",
+              "host": ["{{base_url}}"],
+              "path": ["locations"]
+            },
+            "description": "Lists configured seaports, air hubs, and transit terminals."
+          }
+        },
+        {
+          "name": "Create Location (Admin Only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Port of Felixstowe\",\n  \"code\": \"GBFXT\",\n  \"city\": \"Felixstowe\",\n  \"country\": \"United Kingdom\",\n  \"region\": \"Europe\",\n  \"latitude\": 51.9567,\n  \"longitude\": 1.3069\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/locations",
+              "host": ["{{base_url}}"],
+              "path": ["locations"]
+            },
+            "description": "Creates a new maritime terminal with latitude/longitude coordinates and registers audit log."
+          }
+        }
+      ]
+    }
+  ]
+}
