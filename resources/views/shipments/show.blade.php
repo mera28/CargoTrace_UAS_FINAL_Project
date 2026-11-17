@@ -1,8 +1,14 @@
 @extends('layouts.app')
 
+@php
+    $latestEvent = $shipment->trackingEvents->sortByDesc('event_time')->first();
+    $trackingService = app(\App\Services\TrackingService::class);
+    $allowedNextStatuses = $trackingService->getAllowedNextStatuses($shipment->current_status);
+@endphp
+
 @section('title', 'Shipment ' . $shipment->shipment_number)
 @section('header-title', 'Consignment Details')
-@section('header-subtitle', 'Comprehensive tracking & cargo manifest for ' . $shipment->shipment_number)
+@section('header-subtitle', 'Real-time tracking milestones and cargo manifest for ' . $shipment->shipment_number)
 
 @section('content')
 <div class="space-y-6">
@@ -102,6 +108,45 @@
         </div>
     </div>
 
+    <!-- Current Location Banner (Requirement: Top of shipment details from latest valid tracking event) -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex items-start space-x-3.5">
+            <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-ocean-600 to-sky-400 text-white flex items-center justify-center flex-shrink-0 shadow-md shadow-ocean-600/20">
+                <svg class="w-6 h-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+            </div>
+            <div>
+                <div class="text-[11px] font-bold text-ocean-600 uppercase tracking-wider flex items-center space-x-1.5">
+                    <span class="w-2 h-2 rounded-full bg-ocean-500 animate-ping"></span>
+                    <span>Current Position & Milestone</span>
+                </div>
+                <div class="text-base font-extrabold text-slate-900 mt-0.5">
+                    {{ $latestEvent ? $latestEvent->location_name : $shipment->originLocation->name }}
+                </div>
+                <p class="text-xs text-slate-500 mt-0.5">
+                    {{ $latestEvent ? $latestEvent->description : 'Consignment registered at origin terminal' }}
+                </p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-6 text-xs text-slate-500 font-mono border-t md:border-t-0 md:border-l border-slate-100 pt-3 md:pt-0 md:pl-6">
+            @if($latestEvent && $latestEvent->latitude && $latestEvent->longitude)
+                <div>
+                    <div class="text-[10px] text-slate-400 uppercase font-sans font-semibold">GPS Coordinates</div>
+                    <div class="text-slate-800 font-bold mt-0.5">{{ number_format($latestEvent->latitude, 4) }}&deg;, {{ number_format($latestEvent->longitude, 4) }}&deg;</div>
+                </div>
+            @endif
+            <div>
+                <div class="text-[10px] text-slate-400 uppercase font-sans font-semibold">Last Recorded</div>
+                <div class="text-slate-800 font-bold mt-0.5">
+                    {{ $latestEvent ? $latestEvent->event_time->format('d M Y - H:i') : $shipment->created_at->format('d M Y - H:i') }} UTC
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Metrics Stat Tiles (4 Grid) -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
@@ -175,6 +220,163 @@
         @endif
     </div>
 
+    <!-- TRACKING TIMELINE & ADD EVENT SECTION (Phase 9 Implementation) -->
+    <div class="grid grid-cols-1 {{ (auth()->user()->isAdmin() || auth()->user()->isOperator()) && $shipment->current_status !== 'DELIVERED' ? 'lg:grid-cols-3' : '' }} gap-6">
+
+        <!-- Tracking Timeline (Vertical Progressive Milestone Tree) -->
+        <div class="{{ (auth()->user()->isAdmin() || auth()->user()->isOperator()) && $shipment->current_status !== 'DELIVERED' ? 'lg:col-span-2' : 'w-full' }} bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-5">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div>
+                    <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
+                        <svg class="w-4 h-4 text-ocean-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span>Historical Tracking Timeline</span>
+                    </h3>
+                    <p class="text-xs text-slate-500">Immutable audit chain of voyage events ordered chronologically</p>
+                </div>
+                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 font-mono">
+                    {{ $shipment->trackingEvents->count() }} Milestones
+                </span>
+            </div>
+
+            @if($shipment->trackingEvents->count() > 0)
+                <div class="relative pl-8 space-y-6 before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+                    @foreach($shipment->trackingEvents->sortBy('event_time') as $idx => $event)
+                        @php
+                            $isDelivered = $event->status === 'DELIVERED';
+                            $isWarning = str_contains(strtolower($event->description), 'customs') || str_contains(strtolower($event->description), 'hold') || str_contains(strtolower($event->description), 'delay');
+                        @endphp
+                        <div class="relative group">
+                            <!-- Timeline Dot Icon -->
+                            <div class="absolute -left-8 top-0.5 w-6 h-6 rounded-full flex items-center justify-center ring-4 ring-white shadow-sm {{ $isDelivered ? 'bg-emerald-600 text-white' : ($isWarning ? 'bg-amber-500 text-white' : 'bg-ocean-600 text-white') }}">
+                                @if($isDelivered)
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                @elseif($isWarning)
+                                    <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                                @else
+                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+                                @endif
+                            </div>
+
+                            <!-- Milestone Box -->
+                            <div class="p-4 rounded-xl border {{ $isWarning ? 'bg-amber-50/40 border-amber-200' : 'bg-slate-50/70 border-slate-200' }} shadow-2xs transition-colors">
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="px-2 py-0.5 rounded text-[11px] font-bold uppercase {{ $isDelivered ? 'bg-emerald-100 text-emerald-800' : ($isWarning ? 'bg-amber-100 text-amber-800' : 'bg-sky-100 text-sky-800') }}">
+                                            {{ $event->status }}
+                                        </span>
+                                        <span class="text-sm font-bold text-slate-900">{{ $event->location_name }}</span>
+                                    </div>
+                                    <span class="text-xs text-slate-400 font-mono">{{ $event->event_time->format('d M Y - H:i') }} UTC</span>
+                                </div>
+
+                                <p class="text-xs text-slate-700 mt-1.5 leading-relaxed">{{ $event->description }}</p>
+
+                                <div class="mt-2.5 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px] text-slate-400 font-mono">
+                                    <span>
+                                        @if($event->latitude && $event->longitude)
+                                            GPS: {{ number_format($event->latitude, 4) }}&deg;, {{ number_format($event->longitude, 4) }}&deg;
+                                        @else
+                                            Position: Verified
+                                        @endif
+                                    </span>
+                                    <span>Recorded by: <strong class="text-slate-600 font-sans">{{ $event->recorder->name ?? 'System' }}</strong></span>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <div class="p-8 text-center text-xs text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                    No tracking events recorded yet.
+                </div>
+            @endif
+        </div>
+
+        <!-- Add Tracking Event Form (Admin & Operator only, when status is not DELIVERED) -->
+        @if((auth()->user()->isAdmin() || auth()->user()->isOperator()) && $shipment->current_status !== 'DELIVERED')
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4 self-start">
+                <div class="border-b border-slate-100 pb-3">
+                    <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
+                        <svg class="w-4 h-4 text-ocean-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        <span>Add Tracking Milestone</span>
+                    </h3>
+                    <p class="text-xs text-slate-500">Record a new progressive waypoint or terminal handover</p>
+                </div>
+
+                @if(count($allowedNextStatuses) > 0)
+                    <form action="{{ route('shipments.tracking-events.store', $shipment) }}" method="POST" class="space-y-4">
+                        @csrf
+
+                        <!-- Allowed Next Status Dropdown -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                                Next Allowed Status *
+                            </label>
+                            <select name="status" required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-ocean-500">
+                                @foreach($allowedNextStatuses as $nextSt)
+                                    <option value="{{ $nextSt }}">
+                                        {{ $nextSt }}
+                                        @if($nextSt === 'IN_TRANSIT') (Intermediate Waypoint)
+                                        @elseif($nextSt === 'DELIVERED') (Final Destination)
+                                        @endif
+                                    </option>
+                                @endforeach
+                            </select>
+                            <p class="text-[10px] text-slate-400 mt-1">Current state is <strong class="text-slate-600">{{ $shipment->current_status }}</strong></p>
+                        </div>
+
+                        <!-- Location Name -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Location Name *</label>
+                            <input type="text" name="location_name" required placeholder="e.g. Suez Canal Anchorage"
+                                class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-ocean-500">
+                        </div>
+
+                        <!-- Coordinates (2 columns) -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Latitude</label>
+                                <input type="number" step="0.0000001" name="latitude" placeholder="e.g. 29.9753"
+                                    class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-ocean-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Longitude</label>
+                                <input type="number" step="0.0000001" name="longitude" placeholder="e.g. 32.5599"
+                                    class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-ocean-500">
+                            </div>
+                        </div>
+
+                        <!-- Event Time -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Event Timestamp (UTC) *</label>
+                            <input type="datetime-local" name="event_time" value="{{ now()->format('Y-m-d\TH:i') }}" required
+                                class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-ocean-500">
+                            <p class="text-[10px] text-slate-400 mt-1">Must be chronological (equal or after prior event)</p>
+                        </div>
+
+                        <!-- Description -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Milestone Description *</label>
+                            <textarea name="description" rows="3" required placeholder="Detailed operational update on vessel/carrier status..."
+                                class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-ocean-500"></textarea>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" class="w-full py-2.5 px-4 bg-gradient-to-r from-ocean-600 to-sky-600 hover:from-ocean-500 hover:to-sky-500 text-white font-bold rounded-xl text-xs shadow-md shadow-ocean-600/30 transition-all flex items-center justify-center space-x-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <span>Record Milestone</span>
+                        </button>
+                    </form>
+                @else
+                    <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-500 text-center">
+                        Shipment has reached terminal status. No further milestones can be added.
+                    </div>
+                @endif
+            </div>
+        @endif
+
+    </div>
+
     <!-- Cargo Manifest Items Table -->
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
@@ -225,85 +427,47 @@
         </div>
     </div>
 
-    <!-- Section Placeholders for Subsequent Modules (Tracking, Map, Exceptions) -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Exceptions & Risk Incidents Section -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
+                <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <span>Exceptions & Risk Incidents</span>
+            </h3>
+            <span class="text-[11px] text-slate-400 font-mono">{{ $shipment->exceptions->count() }} Reported</span>
+        </div>
 
-        <!-- Tracking Timeline Section (Seeded events displayed + ready for Phase 9) -->
-        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
-                    <svg class="w-4 h-4 text-ocean-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <span>Chronological Tracking Events</span>
-                </h3>
-                <span class="text-[11px] text-slate-400 font-mono">{{ $shipment->trackingEvents->count() }} Milestones</span>
-            </div>
-
-            @if($shipment->trackingEvents->count() > 0)
-                <div class="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
-                    @foreach($shipment->trackingEvents->sortBy('event_time') as $event)
-                        <div class="relative">
-                            <span class="absolute -left-6 top-1 w-3 h-3 rounded-full bg-ocean-500 ring-4 ring-white"></span>
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs font-bold text-slate-900">{{ $event->status }} &bull; {{ $event->location_name }}</span>
-                                <span class="text-[11px] text-slate-400 font-mono">{{ $event->event_time->format('d M Y - H:i') }}</span>
-                            </div>
-                            <p class="text-xs text-slate-600 mt-1">{{ $event->description }}</p>
-                            @if($event->recorder)
-                                <div class="text-[10px] text-slate-400 mt-0.5">Recorded by: {{ $event->recorder->name }}</div>
+        @if($shipment->exceptions->count() > 0)
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                @foreach($shipment->exceptions as $exc)
+                    <div class="p-4 rounded-xl border {{ $exc->status === 'OPEN' ? 'bg-rose-50/60 border-rose-200' : ($exc->status === 'INVESTIGATING' ? 'bg-amber-50/60 border-amber-200' : 'bg-slate-50 border-slate-200') }} text-xs">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="font-bold text-slate-900 flex items-center space-x-2">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase {{ $exc->severity === 'HIGH' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800' }}">
+                                    {{ $exc->severity }}
+                                </span>
+                                <span>{{ $exc->exception_type }}</span>
+                            </span>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase {{ $exc->status === 'RESOLVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700' }}">
+                                {{ $exc->status }}
+                            </span>
+                        </div>
+                        <p class="text-slate-700 mt-1">{{ $exc->description }}</p>
+                        <div class="text-[10px] text-slate-400 mt-2 flex items-center justify-between">
+                            <span>Detected: {{ $exc->detected_at->format('d M Y H:i') }}</span>
+                            @if($exc->resolved_at)
+                                <span class="text-emerald-700 font-medium">Resolved: {{ $exc->resolved_at->format('d M Y H:i') }}</span>
                             @endif
                         </div>
-                    @endforeach
-                </div>
-            @else
-                <div class="p-6 text-center text-xs text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                    No tracking events recorded yet. Ready for tracking module integration.
-                </div>
-            @endif
-        </div>
-
-        <!-- Exceptions & Incidents Section (Ready for Phase 9) -->
-        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
-                    <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                    <span>Exceptions & Risk Incidents</span>
-                </h3>
-                <span class="text-[11px] text-slate-400 font-mono">{{ $shipment->exceptions->count() }} Reported</span>
+                    </div>
+                @endforeach
             </div>
-
-            @if($shipment->exceptions->count() > 0)
-                <div class="space-y-3">
-                    @foreach($shipment->exceptions as $exc)
-                        <div class="p-4 rounded-xl border {{ $exc->status === 'OPEN' ? 'bg-rose-50/60 border-rose-200' : ($exc->status === 'INVESTIGATING' ? 'bg-amber-50/60 border-amber-200' : 'bg-slate-50 border-slate-200') }} text-xs">
-                            <div class="flex items-center justify-between mb-1.5">
-                                <span class="font-bold text-slate-900 flex items-center space-x-2">
-                                    <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase {{ $exc->severity === 'HIGH' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800' }}">
-                                        {{ $exc->severity }}
-                                    </span>
-                                    <span>{{ $exc->exception_type }}</span>
-                                </span>
-                                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase {{ $exc->status === 'RESOLVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700' }}">
-                                    {{ $exc->status }}
-                                </span>
-                            </div>
-                            <p class="text-slate-700 mt-1">{{ $exc->description }}</p>
-                            <div class="text-[10px] text-slate-400 mt-2 flex items-center justify-between">
-                                <span>Detected: {{ $exc->detected_at->format('d M Y H:i') }}</span>
-                                @if($exc->resolved_at)
-                                    <span class="text-emerald-700 font-medium">Resolved: {{ $exc->resolved_at->format('d M Y H:i') }}</span>
-                                @endif
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            @else
-                <div class="p-6 text-center text-xs text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                    <svg class="w-8 h-8 text-emerald-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <span>No exceptions or customs holds detected on this shipment.</span>
-                </div>
-            @endif
-        </div>
-
+        @else
+            <div class="p-6 text-center text-xs text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                <svg class="w-8 h-8 text-emerald-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span>No active exceptions or customs holds recorded for this consignment.</span>
+            </div>
+        @endif
     </div>
 
     <!-- Maritime Route Overview Card -->

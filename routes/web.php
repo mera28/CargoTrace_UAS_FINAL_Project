@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CarrierController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\ShipmentController;
+use App\Http\Controllers\TrackingEventController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -29,13 +30,16 @@ Route::middleware('auth')->group(function () {
         return view('dashboard');
     })->name('dashboard');
 
-    // Admin & Operator Shipment Management Routes (Must be before {shipment} wildcard)
+    // Admin & Operator Shipment & Operations Management Routes
     Route::middleware('role:admin,operator')->group(function () {
         Route::get('/shipments/create', [ShipmentController::class, 'create'])->name('shipments.create');
         Route::post('/shipments', [ShipmentController::class, 'store'])->name('shipments.store');
         Route::get('/shipments/{shipment}/edit', [ShipmentController::class, 'edit'])->name('shipments.edit');
         Route::put('/shipments/{shipment}', [ShipmentController::class, 'update'])->name('shipments.update');
         Route::delete('/shipments/{shipment}', [ShipmentController::class, 'destroy'])->name('shipments.destroy');
+
+        // Record tracking events
+        Route::post('/shipments/{shipment}/tracking-events', [TrackingEventController::class, 'store'])->name('shipments.tracking-events.store');
     });
 
     // Shipment Read Routes (All authenticated roles)
