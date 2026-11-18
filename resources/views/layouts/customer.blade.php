@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full bg-slate-50">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full bg-slate-200">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -43,7 +43,7 @@
     </style>
     @stack('styles')
 </head>
-<body class="min-h-full flex flex-col bg-slate-50 text-slate-800 antialiased selection:bg-ocean-500 selection:text-white">
+<body class="min-h-full flex flex-col bg-slate-200 text-slate-800 antialiased selection:bg-ocean-500 selection:text-white">
 
     <!-- Top Navigation Bar (Customer Portal) -->
     <header class="sticky top-0 z-50 bg-navy-950/90 backdrop-blur-md border-b border-slate-800/80 text-white shadow-lg transition-all">
@@ -163,7 +163,7 @@
     @endif
 
     <!-- Main Page Body Content -->
-    <main class="flex-1 pb-16">
+    <main class="flex-1 pb-16 bg-slate-200">
         @yield('content')
     </main>
 

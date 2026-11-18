@@ -34,7 +34,7 @@
     </div>
 
     <!-- Notifications List -->
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+    <div class="bg-white rounded-2xl border border-slate-300 shadow-md overflow-hidden divide-y divide-slate-200">
         @forelse($notifications as $notif)
             @php
                 $isUnread = !$notif->is_read;

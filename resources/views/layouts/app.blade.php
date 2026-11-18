@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full bg-slate-50">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full bg-slate-200">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -42,7 +42,7 @@
     </style>
     @stack('styles')
 </head>
-<body class="h-full flex antialiased bg-slate-50 text-slate-800">
+<body class="h-full flex antialiased bg-slate-200 text-slate-800">
 
     <!-- Left Sidebar -->
     <aside class="w-64 bg-navy-900 text-slate-300 flex-shrink-0 flex flex-col justify-between border-r border-slate-800">
@@ -153,9 +153,9 @@
     </aside>
 
     <!-- Main Content Area -->
-    <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+    <div class="flex-1 flex flex-col min-w-0 overflow-y-auto bg-slate-200">
         <!-- Top Navigation Bar -->
-        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-10 shadow-sm">
+        <header class="h-16 bg-white border-b border-slate-300 flex items-center justify-between px-6 sticky top-0 z-10 shadow-sm">
             <div>
                 <h1 class="text-xl font-bold text-slate-900 tracking-tight">
                     @yield('header-title', 'Dashboard')

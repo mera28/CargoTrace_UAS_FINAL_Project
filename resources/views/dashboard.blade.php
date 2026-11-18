@@ -53,48 +53,48 @@
         <!-- 5 Top KPI Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <!-- 1. Total Shipments -->
-            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
-                <div class="w-12 h-12 rounded-xl bg-ocean-50 text-ocean-600 flex items-center justify-center flex-shrink-0">
+            <div class="bg-white rounded-2xl p-5 border border-slate-300 shadow-md flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-xl bg-ocean-50 text-ocean-600 flex items-center justify-center flex-shrink-0 border border-ocean-100">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                 </div>
                 <div class="min-w-0">
-                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Shipments</div>
+                    <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Shipments</div>
                     <div class="text-2xl font-black text-slate-900 mt-0.5">{{ number_format($totalShipments) }}</div>
                     <div class="text-[10px] text-slate-500 mt-0.5">Global Consignments</div>
                 </div>
             </div>
 
             <!-- 2. In Transit -->
-            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
-                <div class="w-12 h-12 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center flex-shrink-0">
+            <div class="bg-white rounded-2xl p-5 border border-slate-300 shadow-md flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center flex-shrink-0 border border-sky-100">
                     <svg class="w-6 h-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 </div>
                 <div class="min-w-0">
-                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">In Transit</div>
+                    <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">In Transit</div>
                     <div class="text-2xl font-black text-sky-600 mt-0.5">{{ number_format($inTransitCount) }}</div>
                     <div class="text-[10px] text-slate-500 mt-0.5">Active at Sea / Air</div>
                 </div>
             </div>
 
             <!-- 3. Delivered -->
-            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
-                <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
+            <div class="bg-white rounded-2xl p-5 border border-slate-300 shadow-md flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0 border border-emerald-100">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                 </div>
                 <div class="min-w-0">
-                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Delivered</div>
+                    <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Delivered</div>
                     <div class="text-2xl font-black text-emerald-600 mt-0.5">{{ number_format($deliveredCount) }}</div>
                     <div class="text-[10px] text-slate-500 mt-0.5">Discharged at Port</div>
                 </div>
             </div>
 
             <!-- 4. Delayed & Exceptions -->
-            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
-                <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center flex-shrink-0">
+            <div class="bg-white rounded-2xl p-5 border border-slate-300 shadow-md flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center flex-shrink-0 border border-rose-100">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                 </div>
                 <div class="min-w-0">
-                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Delayed / Issues</div>
+                    <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Delayed / Issues</div>
                     <div class="text-2xl font-black text-rose-600 mt-0.5">{{ number_format($delayedCount) }}</div>
                     <div class="text-[10px] text-slate-500 mt-0.5">{{ $openExceptionsCount }} Open Exceptions</div>
                 </div>
@@ -102,7 +102,7 @@
 
             <!-- 5. Primary KPI Highlight Card: On-Time Delivery Rate -->
             <div class="bg-gradient-to-br from-ocean-600 to-sky-700 rounded-2xl p-5 text-white shadow-md shadow-ocean-600/20 flex items-center space-x-4">
-                <div class="w-12 h-12 rounded-xl bg-white/20 text-white flex items-center justify-center flex-shrink-0">
+                <div class="w-12 h-12 rounded-xl bg-white/20 text-white flex items-center justify-center flex-shrink-0 border border-white/20">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                 </div>
                 <div class="min-w-0">
@@ -116,8 +116,8 @@
         <!-- 2 Interactive Analytics Charts (Chart.js) -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Chart 1: Status Distribution Doughnut -->
-            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
-                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div class="bg-white rounded-2xl border border-slate-300 p-6 shadow-md space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-200 pb-3">
                     <div>
                         <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
                             <svg class="w-4 h-4 text-ocean-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/></svg>
@@ -125,7 +125,7 @@
                         </h3>
                         <p class="text-xs text-slate-500">Live operational distribution across lifecycle phases</p>
                     </div>
-                    <span class="text-xs font-mono font-bold text-slate-400">{{ $totalShipments }} Total</span>
+                    <span class="text-xs font-mono font-bold text-slate-500">{{ $totalShipments }} Total</span>
                 </div>
 
                 <div class="relative h-64 flex items-center justify-center">
@@ -134,8 +134,8 @@
             </div>
 
             <!-- Chart 2: Shipments by Carrier Bar Chart -->
-            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
-                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div class="bg-white rounded-2xl border border-slate-300 p-6 shadow-md space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-200 pb-3">
                     <div>
                         <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
                             <svg class="w-4 h-4 text-ocean-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
@@ -143,7 +143,7 @@
                         </h3>
                         <p class="text-xs text-slate-500">Active consignment volume per contracted ocean carrier</p>
                     </div>
-                    <span class="text-xs font-mono font-bold text-slate-400">{{ count($carrierLabels) }} Carriers</span>
+                    <span class="text-xs font-mono font-bold text-slate-500">{{ count($carrierLabels) }} Carriers</span>
                 </div>
 
                 <div class="relative h-64 flex items-center justify-center">
@@ -153,8 +153,8 @@
         </div>
 
         <!-- Priority Action Items (Exceptions & Delays) -->
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-0">
-            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+        <div class="bg-white rounded-2xl border border-slate-300 shadow-md overflow-hidden space-y-0">
+            <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">
                 <div>
                     <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
                         <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></span>
@@ -162,53 +162,58 @@
                     </h3>
                     <p class="text-xs text-slate-500">Consignments requiring immediate operator attention (Delays &ge; {{ config('cargotrace.delay_threshold_hours', 12) }}h or Open Customs Holds)</p>
                 </div>
-                <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800">
+                <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">
                     {{ $priorityShipments->count() }} Issues Pending
                 </span>
             </div>
 
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs">
-                    <thead class="bg-slate-50 text-slate-500 font-semibold uppercase tracking-wider border-b border-slate-200/80">
+                    <thead class="bg-slate-900 text-white font-semibold uppercase tracking-wider text-[11px]">
                         <tr>
-                            <th class="px-6 py-3.5">Consignment No.</th>
-                            <th class="px-6 py-3.5">Shipper Client</th>
-                            <th class="px-6 py-3.5">Corridor Route</th>
-                            <th class="px-6 py-3.5">Carrier</th>
-                            <th class="px-6 py-3.5">Delay & Severity</th>
-                            <th class="px-6 py-3.5">Active Incidents</th>
-                            <th class="px-6 py-3.5 text-right">Actions</th>
+                            <th class="px-6 py-4 text-white whitespace-nowrap">Consignment No.</th>
+                            <th class="px-6 py-4 text-white">Shipper Client</th>
+                            <th class="px-6 py-4 text-white whitespace-nowrap">Corridor Route</th>
+                            <th class="px-6 py-4 text-white whitespace-nowrap">Carrier</th>
+                            <th class="px-6 py-4 text-white whitespace-nowrap">Delay & Severity</th>
+                            <th class="px-6 py-4 text-white">Active Incidents</th>
+                            <th class="px-6 py-4 text-right text-white whitespace-nowrap">Actions</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100 text-slate-700">
+                    <tbody class="divide-y divide-slate-200 text-slate-700 bg-white">
                         @forelse($priorityShipments as $shipment)
                             @php
                                 $openExcs = $shipment->exceptions->whereIn('status', ['OPEN', 'INVESTIGATING']);
                             @endphp
-                            <tr class="hover:bg-slate-50/70 transition-colors">
-                                <td class="px-6 py-4 font-mono font-bold text-ocean-600">
-                                    <a href="{{ route('shipments.show', $shipment) }}" class="hover:underline">
-                                        {{ $shipment->shipment_number }}
+                            <tr class="hover:bg-sky-50 even:bg-slate-50/80 transition-colors">
+                                <td class="px-6 py-4 font-mono font-bold whitespace-nowrap">
+                                    <a href="{{ route('shipments.show', $shipment) }}" class="text-ocean-600 hover:text-ocean-700 hover:underline flex items-center space-x-1">
+                                        <span>{{ $shipment->shipment_number }}</span>
+                                        <svg class="w-3.5 h-3.5 text-ocean-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                                     </a>
                                 </td>
                                 <td class="px-6 py-4 font-medium text-slate-900">
-                                    <div>{{ $shipment->customer->name }}</div>
-                                    <div class="text-[11px] text-slate-400">{{ $shipment->customer->company_name ?? 'Individual' }}</div>
+                                    <div class="font-bold">{{ $shipment->customer->name }}</div>
+                                    <div class="text-[11px] text-slate-500">{{ $shipment->customer->company_name ?? 'Individual' }}</div>
                                 </td>
-                                <td class="px-6 py-4 text-slate-800 font-medium">
-                                    {{ $shipment->originLocation->code }} &rarr; {{ $shipment->destinationLocation->code }}
-                                    <div class="text-[11px] text-slate-400">{{ $shipment->originLocation->city }} to {{ $shipment->destinationLocation->city }}</div>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center space-x-1.5 font-semibold text-slate-800">
+                                        <span class="px-2 py-0.5 rounded bg-slate-100 border border-slate-300 text-slate-800 font-mono font-bold text-[11px]">{{ $shipment->originLocation->code }}</span>
+                                        <span class="text-ocean-600 font-bold">&rarr;</span>
+                                        <span class="px-2 py-0.5 rounded bg-slate-100 border border-slate-300 text-slate-800 font-mono font-bold text-[11px]">{{ $shipment->destinationLocation->code }}</span>
+                                    </div>
+                                    <div class="text-[10px] text-slate-500 mt-1">{{ $shipment->originLocation->city }} to {{ $shipment->destinationLocation->city }}</div>
                                 </td>
-                                <td class="px-6 py-4 font-semibold text-slate-800">
-                                    {{ $shipment->carrier->name }}
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="font-semibold text-slate-900">{{ $shipment->carrier->name }}</div>
                                 </td>
-                                <td class="px-6 py-4">
+                                <td class="px-6 py-4 whitespace-nowrap">
                                     @if($shipment->is_delayed)
-                                        <span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-[11px] font-bold {{ $shipment->delay_severity === 'HIGH' ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-amber-100 text-amber-800 border border-amber-200' }}">
+                                        <span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg text-[11px] font-bold border {{ $shipment->delay_severity === 'HIGH' ? 'bg-rose-100 text-rose-800 border-rose-200' : 'bg-amber-100 text-amber-800 border-amber-200' }}">
                                             <span>+{{ $shipment->delay_hours }}h ({{ $shipment->delay_severity }})</span>
                                         </span>
                                     @else
-                                        <span class="text-slate-400 italic">No delay variance</span>
+                                        <span class="text-emerald-700 font-bold">On Schedule</span>
                                     @endif
                                 </td>
                                 <td class="px-6 py-4">
@@ -225,8 +230,8 @@
                                         <span class="text-slate-400 italic">None</span>
                                     @endif
                                 </td>
-                                <td class="px-6 py-4 text-right">
-                                    <a href="{{ route('shipments.show', $shipment) }}" class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition-colors">
+                                <td class="px-6 py-4 text-right whitespace-nowrap">
+                                    <a href="{{ route('shipments.show', $shipment) }}" class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition-colors shadow-xs">
                                         <span>Resolve</span>
                                         <svg class="w-3.5 h-3.5 text-ocean-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                                     </a>
@@ -234,11 +239,11 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-6 py-8 text-center text-slate-400">
+                                <td colspan="7" class="px-6 py-12 text-center text-slate-400">
                                     <div class="flex flex-col items-center justify-center space-y-1">
                                         <svg class="w-8 h-8 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                         <span class="font-bold text-slate-700">All Corridors Clear</span>
-                                        <span class="text-xs text-slate-400">No active delay thresholds breached or open customs holds.</span>
+                                        <span class="text-xs text-slate-500">No active delay thresholds breached or open customs holds.</span>
                                     </div>
                                 </td>
                             </tr>
@@ -336,6 +341,9 @@
                 </div>
 
                 <!-- Right Column: 3D Interactive Animated Globe -->
+                @php
+                    $latestActiveShipment = $customerShipments->where('current_status', '!=', 'DELIVERED')->first() ?? $customerShipments->first();
+                @endphp
                 <div class="lg:col-span-6 relative flex items-center justify-center">
                     <div class="relative w-full h-[380px] sm:h-[440px] lg:h-[480px] rounded-3xl overflow-hidden flex items-center justify-center">
                         <!-- 3D Globe Container -->
@@ -349,6 +357,38 @@
                                 <div class="text-[11px] text-slate-400">Rotterdam &bull; Hamburg &bull; Antwerp &bull; Singapore &bull; Jakarta</div>
                             </div>
                         </div>
+
+                        <!-- 1. Floating Live Courier / Vessel Telemetry Glassmorphism Widget -->
+                        @if($latestActiveShipment)
+                            <a href="{{ route('shipments.show', $latestActiveShipment) }}"
+                               class="group absolute top-4 left-4 z-20 max-w-[270px] sm:max-w-xs p-3 sm:p-3.5 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-sky-400/30 text-white shadow-2xl hover:border-sky-400 hover:bg-slate-900/90 transition-all pointer-events-auto">
+                                <div class="flex items-center justify-between gap-2 mb-1.5">
+                                    <div class="flex items-center space-x-1.5">
+                                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                                        <span class="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400">Live Corridor Active</span>
+                                    </div>
+                                    <span class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-ocean-500/20 text-sky-300 border border-sky-500/30">
+                                        {{ $latestActiveShipment->current_status }}
+                                    </span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div class="min-w-0 pr-2">
+                                        <div class="font-mono font-black text-sm text-sky-300 group-hover:text-white transition-colors truncate">
+                                            {{ $latestActiveShipment->shipment_number }}
+                                        </div>
+                                        <div class="text-[11px] text-slate-300 font-semibold flex items-center space-x-1.5 mt-0.5">
+                                            <span class="px-1.5 py-0.2 rounded bg-slate-800 border border-slate-700 text-sky-300 font-mono text-[10px]">{{ $latestActiveShipment->originLocation->code }}</span>
+                                            <span class="text-ocean-400">&rarr;</span>
+                                            <span class="px-1.5 py-0.2 rounded bg-slate-800 border border-slate-700 text-sky-300 font-mono text-[10px]">{{ $latestActiveShipment->destinationLocation->code }}</span>
+                                            <span class="text-slate-400 font-normal text-[10px] truncate">({{ $latestActiveShipment->carrier->name }})</span>
+                                        </div>
+                                    </div>
+                                    <div class="w-7 h-7 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center group-hover:bg-ocean-600 group-hover:text-white transition-all flex-shrink-0">
+                                        <svg class="w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                                    </div>
+                                </div>
+                            </a>
+                        @endif
 
                         <!-- Floating HUD Badge -->
                         <div class="absolute bottom-4 right-4 px-3 py-1.5 rounded-full bg-slate-900/80 border border-slate-700/80 backdrop-blur-md text-[10px] font-mono text-sky-300 flex items-center space-x-2 shadow-xl pointer-events-none">
@@ -397,37 +437,72 @@
             </div>
         @endif
 
-        <!-- Section Header -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
-            <div>
-                <h2 class="text-xl font-black text-slate-900 tracking-tight flex items-center space-x-2.5">
-                    <span>My Active Consignments</span>
-                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-ocean-50 text-ocean-700 border border-ocean-200">
-                        {{ $customerShipments->count() }} Registered
-                    </span>
-                </h2>
-                <p class="text-xs text-slate-500 mt-1">Live voyage telemetry, visual milestone progress, and verified carrier positions</p>
+        <!-- Section Header & Interactive Filter Tabs -->
+        <div class="space-y-4 border-b border-slate-300 pb-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-xl font-black text-slate-900 tracking-tight flex items-center space-x-2.5">
+                        <span>My Active Consignments</span>
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-white text-ocean-700 border border-slate-300 shadow-2xs">
+                            {{ $customerShipments->count() }} Registered
+                        </span>
+                    </h2>
+                    <p class="text-xs text-slate-600 mt-1">Live voyage telemetry, visual milestone progress, and verified carrier positions</p>
+                </div>
+
+                <div class="flex items-center space-x-2 text-xs">
+                    <a href="{{ route('shipments.index') }}" class="inline-flex items-center space-x-1.5 text-xs font-bold text-ocean-700 hover:text-ocean-800 transition-colors bg-white px-3.5 py-2 rounded-xl border border-slate-300 shadow-2xs hover:bg-slate-50">
+                        <span>View Directory Table</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </a>
+                </div>
             </div>
 
-            <div class="flex items-center space-x-2 text-xs">
-                <a href="{{ route('shipments.index') }}" class="inline-flex items-center space-x-1.5 text-xs font-bold text-ocean-600 hover:text-ocean-700 transition-colors">
-                    <span>View Directory Table</span>
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                </a>
+            <!-- 2. Interactive Filter Tabs (No Reload) -->
+            @php
+                $delayedCountCustomer = $customerShipments->filter(fn($s) => $s->is_delayed || $s->exceptions->count() > 0)->count();
+            @endphp
+            <div class="flex flex-wrap items-center gap-2 pt-1" id="customerShipmentTabs">
+                <button type="button" data-filter="all"
+                    class="client-tab-btn px-4 py-2 rounded-xl text-xs font-bold transition-all bg-slate-900 text-white shadow-sm flex items-center space-x-2">
+                    <span>All Shipments</span>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] bg-slate-700 text-slate-100 font-bold">{{ $customerShipments->count() }}</span>
+                </button>
+
+                <button type="button" data-filter="in_transit"
+                    class="client-tab-btn px-4 py-2 rounded-xl text-xs font-bold transition-all bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 flex items-center space-x-2">
+                    <span>In Transit</span>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] bg-sky-100 text-sky-800 font-bold">{{ $inTransitCount }}</span>
+                </button>
+
+                <button type="button" data-filter="delayed"
+                    class="client-tab-btn px-4 py-2 rounded-xl text-xs font-bold transition-all bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 flex items-center space-x-2">
+                    <span>Delayed / Hold</span>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] bg-amber-100 text-amber-800 font-bold">{{ $delayedCountCustomer }}</span>
+                </button>
+
+                <button type="button" data-filter="delivered"
+                    class="client-tab-btn px-4 py-2 rounded-xl text-xs font-bold transition-all bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 flex items-center space-x-2">
+                    <span>Delivered</span>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] bg-emerald-100 text-emerald-800 font-bold">{{ $deliveredCount }}</span>
+                </button>
             </div>
         </div>
 
         <!-- Modern Cards List (Client Portal Cards) -->
-        <div class="space-y-6">
+        <div class="space-y-6" id="customerShipmentList">
             @forelse($customerShipments as $cShip)
                 @php
                     $latestMilestone = $cShip->trackingEvents->first();
                     $allStatuses = ['CREATED', 'BOOKED', 'PICKED_UP', 'IN_TRANSIT', 'DELIVERED'];
                     $currentStatusIndex = array_search($cShip->current_status, $allStatuses);
                     if ($currentStatusIndex === false) $currentStatusIndex = 0;
+                    $isDelayedOrHold = $cShip->is_delayed || $cShip->exceptions->count() > 0;
                 @endphp
 
-                <div class="bg-white rounded-3xl border border-slate-200/90 shadow-sm hover:shadow-md transition-all overflow-hidden p-6 sm:p-7 space-y-6">
+                <div class="client-shipment-card bg-white rounded-3xl border border-slate-300 shadow-md hover:shadow-lg transition-all overflow-hidden p-6 sm:p-7 space-y-6"
+                     data-status="{{ $cShip->current_status }}"
+                     data-delayed="{{ $isDelayedOrHold ? '1' : '0' }}">
 
                     <!-- Card Header Row -->
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
@@ -457,7 +532,7 @@
                                     <span>IN TRANSIT</span>
                                 </span>
                             @else
-                                <span class="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-800 border border-slate-200">
+                                <span class="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-800 border border-slate-300">
                                     {{ $cShip->current_status }}
                                 </span>
                             @endif
@@ -510,7 +585,7 @@
                     <div class="pt-2 pb-2">
                         <div class="relative flex items-center justify-between">
                             <!-- Background line -->
-                            <div class="absolute left-4 right-4 top-4 h-1 bg-slate-100 -z-0"></div>
+                            <div class="absolute left-4 right-4 top-4 h-1 bg-slate-200 -z-0"></div>
                             <!-- Active colored progress bar -->
                             <div class="absolute left-4 top-4 h-1 bg-ocean-500 -z-0 transition-all duration-700"
                                  style="width: calc({{ ($currentStatusIndex / 4) * 100 }}% - 32px)"></div>
@@ -591,15 +666,91 @@
 
                 </div>
             @empty
-                <div class="p-16 text-center text-slate-400 bg-white rounded-3xl border border-dashed border-slate-200 space-y-3">
+                <div class="p-16 text-center text-slate-400 bg-white rounded-3xl border border-dashed border-slate-300 shadow-sm space-y-3">
                     <div class="w-16 h-16 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
                         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                     </div>
                     <div class="text-base font-bold text-slate-700">No Consignments Found</div>
-                    <p class="text-xs text-slate-400 max-w-sm mx-auto">You do not have any registered shipments in the CargoTrace system yet.</p>
+                    <p class="text-xs text-slate-500 max-w-sm mx-auto">You do not have any registered shipments in the CargoTrace system yet.</p>
                 </div>
             @endforelse
+
+            <!-- Filter Empty Notice -->
+            <div id="emptyTabNotice" class="hidden p-16 text-center text-slate-400 bg-white rounded-3xl border border-dashed border-slate-300 shadow-sm space-y-3">
+                <div class="w-16 h-16 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+                </div>
+                <div class="text-base font-bold text-slate-700">No Consignments in this Filter</div>
+                <p class="text-xs text-slate-500 max-w-sm mx-auto">There are no shipments matching the selected filter category.</p>
+            </div>
         </div>
+
+        <!-- 3. Section: Global Network & SLA Guarantees -->
+        <section class="mt-14 pb-8">
+            <div class="text-center max-w-2xl mx-auto mb-10 space-y-2">
+                <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white text-ocean-700 border border-slate-300 text-[11px] font-extrabold uppercase tracking-wider shadow-2xs">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span>Enterprise SLA & Operational Reliability</span>
+                </div>
+                <h3 class="text-2xl font-black text-slate-900 tracking-tight">Global Network & Visibility Guarantees</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    Engineered specifically for high-value maritime cargo moving across strategic Asia-Europe corridors with automated risk management.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Card 1: Real-Time Corridor Visibility -->
+                <div class="bg-white rounded-3xl p-6 border border-slate-300 shadow-md hover:shadow-lg transition-all space-y-4">
+                    <div class="w-12 h-12 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center font-black border border-sky-200 shadow-sm">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <div>
+                        <h4 class="text-base font-bold text-slate-900">Real-Time Corridor Visibility</h4>
+                        <p class="text-xs text-slate-600 mt-2 leading-relaxed">
+                            Continuous multi-modal waypoint tracking connecting Southeast Asian hubs (Jakarta, Singapore, Tanjung Pelepas) directly with major European discharge ports (Rotterdam, Hamburg, Antwerp).
+                        </p>
+                    </div>
+                    <div class="pt-3 border-t border-slate-100 flex items-center space-x-2 text-[11px] font-mono text-ocean-700 font-bold">
+                        <span class="w-1.5 h-1.5 rounded-full bg-ocean-500"></span>
+                        <span>SEA &rarr; EUR Dedicated Route</span>
+                    </div>
+                </div>
+
+                <!-- Card 2: Proactive Customs & Delay Alerts -->
+                <div class="bg-white rounded-3xl p-6 border border-slate-300 shadow-md hover:shadow-lg transition-all space-y-4">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-black border border-amber-200 shadow-sm">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    </div>
+                    <div>
+                        <h4 class="text-base font-bold text-slate-900">Proactive Customs & Delay Alerts</h4>
+                        <p class="text-xs text-slate-600 mt-2 leading-relaxed">
+                            Automated evaluation engine detects schedule deviations exceeding {{ config('cargotrace.delay_threshold_hours', 12) }} hours, instantly flagging customs documentation holds and port congestion.
+                        </p>
+                    </div>
+                    <div class="pt-3 border-t border-slate-100 flex items-center space-x-2 text-[11px] font-mono text-amber-700 font-bold">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                        <span>Threshold: &gt;{{ config('cargotrace.delay_threshold_hours', 12) }}h Automated Trigger</span>
+                    </div>
+                </div>
+
+                <!-- Card 3: 24/7 Weather & Port Monitoring -->
+                <div class="bg-white rounded-3xl p-6 border border-slate-300 shadow-md hover:shadow-lg transition-all space-y-4">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black border border-emerald-200 shadow-sm">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z"/></svg>
+                    </div>
+                    <div>
+                        <h4 class="text-base font-bold text-slate-900">24/7 Weather & Port Monitoring</h4>
+                        <p class="text-xs text-slate-600 mt-2 leading-relaxed">
+                            Live meteorological telemetric feeds powered by Open-Meteo and OpenStreetMap geocoding provide continuous environmental context at every waypoint and harbor.
+                        </p>
+                    </div>
+                    <div class="pt-3 border-t border-slate-100 flex items-center space-x-2 text-[11px] font-mono text-emerald-700 font-bold">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        <span>Open-Meteo & OpenStreetMap Synced</span>
+                    </div>
+                </div>
+            </div>
+        </section>
 
     </div>
 
@@ -811,6 +962,61 @@
                 console.warn('Globe.gl initialization note:', err);
                 if (fallback) fallback.classList.remove('hidden');
             }
+
+            // Interactive Tab Filtering (Vanilla JS - No Reload)
+            const tabButtons = document.querySelectorAll('.client-tab-btn');
+            const shipmentCards = document.querySelectorAll('.client-shipment-card');
+            const emptyTabNotice = document.getElementById('emptyTabNotice');
+
+            tabButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const filter = btn.getAttribute('data-filter');
+
+                    tabButtons.forEach(b => {
+                        b.classList.remove('bg-slate-900', 'text-white', 'shadow-sm');
+                        b.classList.add('bg-white', 'text-slate-700', 'border', 'border-slate-300');
+                        const bBadge = b.querySelector('span:last-child');
+                        if (bBadge && b.getAttribute('data-filter') === 'all') {
+                            bBadge.className = 'px-2 py-0.5 rounded-full text-[10px] bg-slate-200 text-slate-800 font-bold';
+                        }
+                    });
+
+                    btn.classList.remove('bg-white', 'text-slate-700', 'border', 'border-slate-300');
+                    btn.classList.add('bg-slate-900', 'text-white', 'shadow-sm');
+                    const activeBadge = btn.querySelector('span:last-child');
+                    if (activeBadge && filter === 'all') {
+                        activeBadge.className = 'px-2 py-0.5 rounded-full text-[10px] bg-slate-700 text-slate-100 font-bold';
+                    }
+
+                    let visibleCount = 0;
+                    shipmentCards.forEach(card => {
+                        const status = card.getAttribute('data-status');
+                        const isDelayed = card.getAttribute('data-delayed') === '1';
+
+                        let show = false;
+                        if (filter === 'all') {
+                            show = true;
+                        } else if (filter === 'in_transit') {
+                            show = status === 'IN_TRANSIT';
+                        } else if (filter === 'delayed') {
+                            show = isDelayed;
+                        } else if (filter === 'delivered') {
+                            show = status === 'DELIVERED';
+                        }
+
+                        if (show) {
+                            card.style.display = '';
+                            visibleCount++;
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+
+                    if (emptyTabNotice) {
+                        emptyTabNotice.classList.toggle('hidden', visibleCount > 0);
+                    }
+                });
+            });
         });
     </script>
 @endif
