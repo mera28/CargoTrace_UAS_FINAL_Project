@@ -1,11 +1,11 @@
-@extends('layouts.app')
+@extends(auth()->user()->isCustomer() ? 'layouts.customer' : 'layouts.app')
 
 @section('title', 'In-App Notifications')
 @section('header-title', 'Operational Notifications')
 @section('header-subtitle', 'Real-time alerts, customs exceptions, and corridor milestones')
 
 @section('content')
-<div class="space-y-6 max-w-5xl">
+<div class="space-y-6 max-w-5xl {{ auth()->user()->isCustomer() ? 'mx-auto px-4 sm:px-6 lg:px-8 mt-6' : '' }}">
 
     <!-- Top Action Bar -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

@@ -1,11 +1,11 @@
-@extends('layouts.app')
+@extends(auth()->user()->isCustomer() ? 'layouts.customer' : 'layouts.app')
 
 @section('title', 'Shipments Directory')
 @section('header-title', 'Shipment Management')
 @section('header-subtitle', 'Real-time multi-modal consignments across the Southeast Asia & Europe corridor')
 
 @section('content')
-<div class="space-y-6">
+<div class="{{ auth()->user()->isCustomer() ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6' : '' }} space-y-6">
 
     <!-- Top Action Bar -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends(auth()->user()->isCustomer() ? 'layouts.customer' : 'layouts.app')
 
 @php
     $latestEvent = $shipment->trackingEvents->sortByDesc('event_time')->first();
@@ -80,13 +80,13 @@
 @section('header-subtitle', 'Real-time tracking, ETA evaluation, and risk incidents for ' . $shipment->shipment_number)
 
 @section('content')
-<div class="space-y-6">
+<div class="{{ auth()->user()->isCustomer() ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6' : '' }} space-y-6">
 
     <!-- Top Action & Navigation Bar -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <a href="{{ route('shipments.index') }}" class="inline-flex items-center space-x-2 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-            <span>Back to Shipments Directory</span>
+            <span>{{ auth()->user()->isCustomer() ? 'Back to My Shipments' : 'Back to Shipments Directory' }}</span>
         </a>
 
         @if(auth()->user()->isAdmin() || auth()->user()->isOperator())
